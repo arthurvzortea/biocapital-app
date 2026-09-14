@@ -222,7 +222,12 @@
 
   <footer class="app-footer">
     <div class="footer-brand"><img class="brand-logo footer-logo" src="/logo.png" alt="BioCapital"><span>Capital que regenera.</span></div>
-    <div class="footer-links"><button (click)="switchTab('marketplace')">Projetos ambientais</button><button (click)="openLoginModal()">Acessar conta</button></div>
+    <div class="footer-links">
+      <button (click)="switchTab('marketplace')">Projetos ambientais</button>
+      @if (!isLoggedIn()) {
+        <button (click)="openLoginModal()">Acessar conta</button>
+      }
+    </div>
     <div class="footer-meta"><span>Decisões melhores. Impacto real.</span><small>© 2026 BioCapital</small></div>
   </footer>
 </div>
