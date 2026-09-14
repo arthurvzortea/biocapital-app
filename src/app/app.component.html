@@ -1,0 +1,228 @@
+<div class="app-container">
+  @if (showOnboarding()) {
+  <div class="modal-overlay">
+    <div class="modal-box onboarding-box">
+      <button class="modal-close" (click)="closeOnboarding()" aria-label="Fechar">
+        <lucide-icon [img]="XIcon" size="20"></lucide-icon>
+      </button>
+
+      <div class="onboarding-badge">
+        <div class="onboarding-mark">
+          <img class="brand-logo onboarding-logo" src="/logo.png" alt="BioCapital">
+        </div>
+      </div>
+
+      <h2 class="onboarding-title">Desperte Seu Capital</h2>
+      <p class="onboarding-desc">
+        A BioCapital conecta seu dinheiro a projetos de preservação reais. Invista, acompanhe a valorização e veja seu impacto ambiental crescer.
+      </p>
+
+      <div class="onboarding-features">
+        <div class="feature-item">
+          <lucide-icon [img]="TrendingUpIcon" size="16"></lucide-icon>
+          <span>Retorno Real</span>
+        </div>
+        <div class="feature-item">
+          <lucide-icon [img]="ShieldCheckIcon" size="16"></lucide-icon>
+          <span>100% Verificado</span>
+        </div>
+      </div>
+
+      <button class="btn-primary full-width onboarding-btn" (click)="closeOnboarding()">
+        Start / Começar a explorar
+      </button>
+    </div>
+  </div>
+}
+
+  @if (showLoginModal()) {
+    <div class="modal-overlay"><div class="modal-box auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button class="modal-close" (click)="showLoginModal.set(false)" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
+      <div class="auth-heading"><div class="auth-mark"><img class="brand-logo auth-logo" src="/logo.png" alt="BioCapital"></div><div><p class="eyebrow">CONTA BIOCAPITAL</p><h2 id="authTitle">{{ authMode() === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta' }}</h2></div></div>
+      <p class="modal-copy">{{ authMode() === 'login' ? 'Acesse sua carteira e acompanhe seu impacto.' : 'Cadastre-se para começar a cuidar do seu dinheiro e do planeta.' }}</p>
+      <form class="auth-form" (submit)="$event.preventDefault(); processEmailAuth(authName(), authEmail.value, authPassword.value)">
+        @if (authMode() === 'register') {
+          <label class="field-label" for="authName">Nome completo</label>
+          <input id="authName" class="neo-field" type="text" autocomplete="name" placeholder="Como podemos chamar você?" [value]="authName()" (input)="authName.set($any($event.target).value)">
+        }
+        <label class="field-label" for="authEmail">E-mail</label>
+        <input id="authEmail" #authEmail class="neo-field" type="email" autocomplete="email" placeholder="voce@email.com" required>
+        <label class="field-label" for="authPassword">Senha</label>
+        <input id="authPassword" #authPassword class="neo-field" type="password" autocomplete="current-password" placeholder="Mínimo de 6 caracteres" minlength="6" required>
+        <button class="btn-primary full-width auth-submit" type="submit" [disabled]="authLoading()">{{ authLoading() ? 'Aguarde...' : (authMode() === 'login' ? 'Entrar com e-mail' : 'Criar minha conta') }}</button>
+      </form>
+      <div class="auth-divider"><span>ou continue com</span></div>
+      <button class="btn-secondary full-width google-button" (click)="processAuth('', '')" [disabled]="authLoading()">Entrar com Google</button>
+      <p class="auth-switch">{{ authMode() === 'login' ? 'Ainda não tem uma conta?' : 'Já possui uma conta?' }} <button type="button" (click)="toggleAuthMode()">{{ authMode() === 'login' ? 'Cadastre-se' : 'Entrar' }}</button></p>
+    </div></div>
+  }
+
+  @if (showInvestModal()) {
+    <div class="modal-overlay"><div class="modal-box">
+      <button class="modal-close" (click)="closeModals()" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
+      <h2>Confirmar Aporte</h2>
+      <p class="modal-copy"><strong>Projeto:</strong> {{ selectedProject() }}<br><strong>Parceiro:</strong> {{ selectedOng() }}</p>
+      <label class="field-label" for="investAmount">Valor do Aporte (R$)</label>
+      <input id="investAmount" #investAmount type="number" placeholder="Ex: 50.00" min="50" class="neo-field">
+      <button class="btn-primary full-width" (click)="processInvestment(investAmount.value)">Efetuar Transação</button>
+    </div></div>
+  }
+
+  @if (showSellModal()) {
+    <div class="modal-overlay"><div class="modal-box">
+      <button class="modal-close" (click)="closeModals()" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
+      <h2>Vender Créditos (B2B)</h2>
+      <p class="modal-copy">Saldo atual: <strong>{{ carbonCredits() | number:'1.2-2' }} tCO2</strong></p>
+      <label class="field-label" for="companySelect">Empresa Compradora</label>
+      <select id="companySelect" #companySelect class="neo-field"><option value="128.00">Natura Cosméticos</option><option value="125.50">Ambev S.A.</option><option value="126.00">Mercado Livre</option></select>
+      <label class="field-label" for="sellQty">Quantidade (tCO2)</label>
+      <input id="sellQty" #sellQty type="number" placeholder="Ex: 1.0" step="0.1" class="neo-field">
+      <button class="btn-primary full-width" (click)="processCarbonSale(sellQty.value, companySelect.value)">Confirmar Venda</button>
+    </div></div>
+  }
+
+  @if (showBlockchainModal()) {
+    <div class="modal-overlay"><div class="modal-box">
+      <button class="modal-close" (click)="closeModals()" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
+      <h2>Registro em Blockchain</h2>
+      <pre class="blockchain-code">{{ blockchainData() }}</pre>
+    </div></div>
+  }
+
+  <div class="toast-container">@for (toast of toasts(); track toast.id) { <div class="toast" [ngClass]="toast.type">{{ toast.message }}</div> }</div>
+
+  <nav class="top-nav" aria-label="Navegação principal">
+    <div class="brand-container"><img class="brand-logo nav-logo" src="/logo.png" alt="BioCapital"></div>
+    <ul class="nav-links">
+      <li><button class="nav-link" [class.active]="activeTab() === 'dashboard'" (click)="switchTab('dashboard')">Início</button></li>
+      <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
+      <li><button class="nav-link" [class.active]="activeTab() === 'aprenda'" (click)="switchTab('aprenda')">Aprenda</button></li>
+      @if (isLoggedIn()) {
+        <li><button class="nav-link" [class.active]="activeTab() === 'carteira'" (click)="switchTab('carteira')">Minha Carteira</button></li>
+        <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
+        <li><button class="nav-link" [class.active]="activeTab() === 'certificados'" (click)="switchTab('certificados')">Certificados</button></li>
+        <li><button class="nav-link" [class.active]="activeTab() === 'perfil'" (click)="switchTab('perfil')">Perfil</button></li>
+      }
+    </ul>
+    <div class="nav-actions">
+      <div class="live-balance-pill"><span class="balance-label">Saldo disponível</span><span class="balance-value">{{ balance() | currency:'BRL' }}</span></div>
+      <button class="btn-secondary icon-button" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'"><lucide-icon [img]="isDarkMode ? SunIcon : MoonIcon" size="18"></lucide-icon></button>
+      @if (!isLoggedIn()) { <button class="btn-primary" (click)="openLoginModal()">Login</button> } @else { <button class="btn-secondary icon-button logout-button" (click)="logout()" aria-label="Sair"><lucide-icon [img]="LogOutIcon" size="18"></lucide-icon></button> }
+    </div>
+  </nav>
+
+  <main class="main-content">
+    @if (activeTab() === 'dashboard') {
+      <header class="page-heading dashboard-heading"><div><p class="eyebrow">IMPACT INVESTING</p><h1>Sua Carteira Viva</h1><p>Faça seu patrimônio crescer enquanto o mundo recupera o fôlego.</p></div><button class="btn-primary" (click)="switchTab('marketplace')">Explorar projetos</button></header>
+
+      <section class="stats-grid dashboard-stats" aria-label="Resumo financeiro">
+        <article class="stat-card metric-card"><div class="metric-icon green"><lucide-icon [img]="FileCheckIcon" size="22"></lucide-icon></div><span class="stat-title">Patrimônio total</span><strong class="stat-value">{{ (balance() + investedTotal()) | currency:'BRL' }}</strong><small>Disponível + investido</small></article>
+        <article class="stat-card metric-card"><div class="metric-icon yellow"><lucide-icon [img]="TrendingUpIcon" size="22"></lucide-icon></div><span class="stat-title">Rendimento financeiro</span><strong class="stat-value">{{ 0 | currency:'BRL' }}</strong><small>Sem rendimento automático</small></article>
+        <article class="stat-card metric-card"><div class="metric-icon green"><lucide-icon [img]="ZapIcon" size="22"></lucide-icon></div><span class="stat-title">Receita de carbono</span><strong class="stat-value">{{ carbonCredits() | number:'1.2-2' }} tCO2</strong><small>Créditos disponíveis</small></article>
+        <article class="stat-card metric-card"><div class="metric-icon green"><lucide-icon [img]="TreePineIcon" size="22"></lucide-icon></div><span class="stat-title">Árvores financiadas</span><strong class="stat-value">{{ treesPlanted() | number }}</strong><small>Impacto acumulado</small></article>
+      </section>
+
+      <section class="dashboard-split">
+        <article class="stat-card chart-panel"><div class="panel-heading"><div><h2>Evolução da carteira</h2><p>Histórico das movimentações confirmadas</p></div><div class="chart-legend"><span><i class="legend-green"></i>Financeiro</span><span><i class="legend-yellow"></i>Carbono</span></div></div><div class="line-chart">@for (bar of liveChartData(); track $index) {<div class="chart-column"><div class="chart-bar" [ngClass]="{'up': bar.isUp, 'down': !bar.isUp}" [style.height.%]="(bar.value / (balance() + investedTotal() || 1)) * 100 | number:'1.0-0'"></div><small>{{ $index + 1 }}</small></div>}</div></article>
+        <article class="stat-card allocation-panel"><h2>Alocação da carteira</h2><p>{{ balance() > 0 ? 'Saldo disponível' : 'Comece com seu saldo' }}</p><div class="allocation-ring"><span>{{ (balance() + investedTotal()) | currency:'BRL':'symbol':'1.0-0' }}</span><small>Total</small></div><div class="allocation-list"><span><i class="legend-green"></i>Renda disponível <b>{{ balance() | currency:'BRL' }}</b></span><span><i class="legend-yellow"></i>Projetos ambientais <b>{{ investedTotal() | currency:'BRL' }}</b></span></div></article>
+      </section>
+
+      <section class="stat-card impact-panel"><div class="panel-heading"><div><h2>Seu impacto ambiental</h2><p>Resultados reais do seu investimento</p></div></div><div class="impact-list"><div><span><lucide-icon [img]="TreePineIcon" size="18"></lucide-icon> Árvores plantadas</span><strong>{{ treesPlanted() | number }}</strong><div class="progress-track"><span class="progress-green" [style.width.%]="Math.min(treesPlanted() / 500 * 100, 100)"></span></div></div><div><span><lucide-icon [img]="ZapIcon" size="18"></lucide-icon> CO2 sequestrado</span><strong>{{ carbonCredits() | number:'1.2-2' }} t</strong><div class="progress-track"><span class="progress-green" [style.width.%]="Math.min(carbonCredits() / 50 * 100, 100)"></span></div></div><div><span><lucide-icon [img]="ShieldCheckIcon" size="18"></lucide-icon> Projetos apoiados</span><strong>{{ certificates().length }}</strong><div class="progress-track"><span class="progress-yellow" [style.width.%]="Math.min(certificates().length / 10 * 100, 100)"></span></div></div></div></section>
+
+      <section class="stat-card how-it-works"><h2>Como funciona o investimento</h2><div class="steps-grid"><div><b>01</b><h3>Invista</h3><p>Escolha um projeto e use o saldo disponível para apoiar a regeneração.</p></div><div><b>02</b><h3>Cresça</h3><p>Acompanhe seus ativos, árvores financiadas e créditos de carbono.</p></div><div><b>03</b><h3>Colha</h3><p>Consulte seus certificados e veja cada movimentação registrada.</p></div></div></section>
+    }
+
+    @if (activeTab() === 'marketplace') {
+      <header class="page-heading"><div><p class="eyebrow">INVESTIMENTO AMBIENTAL</p><h1>Marketplace de Projetos</h1><p>Escolha onde o seu dinheiro será plantado.</p></div></header>
+      <div class="market-tools"><input class="search-field" type="search" placeholder="Buscar projetos..." [value]="marketSearch()" (input)="marketSearch.set($any($event.target).value)"><div class="filter-list"><button [class.active]="marketRegion() === 'Todos'" (click)="setMarketRegion('Todos')">Todos</button><button [class.active]="marketRegion() === 'Amazônia'" (click)="setMarketRegion('Amazônia')">Amazônia</button><button [class.active]="marketRegion() === 'Cerrado'" (click)="setMarketRegion('Cerrado')">Cerrado</button><button [class.active]="marketRegion() === 'Mata Atlântica'" (click)="setMarketRegion('Mata Atlântica')">Mata Atlântica</button></div></div>
+      <div class="project-grid">@for (project of filteredProjects(); track project.name) {<article class="project-card project-showcase"><div class="project-visual"><img [src]="project.image" [alt]="project.name"><span class="project-region">{{ project.region }}</span></div><div class="project-copy"><h2>{{ project.name }}</h2><p>{{ project.description }}</p><small>Parceiro: {{ project.partner }}</small><div class="project-metrics"><span><b>{{ project.returnRate }}%</b><small>Retorno anual</small></span><span><b>{{ project.treeGoal | number }}</b><small>Árvores meta</small></span><span><b>7 anos</b><small>Maturação</small></span></div><div class="project-progress"><span>Investimento mínimo: {{ project.minimum | currency:'BRL' }}</span><button class="btn-primary" (click)="openInvestModal(project.name, project.partner)">Aportar capital</button></div></div></article>} @empty {<div class="empty-state stat-card"><h2>Nenhum projeto encontrado</h2><p>Tente outra busca ou região.</p></div>}</div>
+    }
+
+    @if (activeTab() === 'carteira') {
+      <header class="page-heading"><div><p class="eyebrow">ACOMPANHAMENTO EM TEMPO REAL</p><h1>Minha Carteira Viva</h1><p>Acompanhe seus investimentos crescendo em tempo real.</p></div></header>
+      <section class="portfolio-hero"><div><span>Patrimônio disponível</span><strong>{{ balance() | currency:'BRL' }}</strong><small>{{ investedTotal() | currency:'BRL' }} já investidos em projetos</small></div><div class="portfolio-numbers"><span><b>{{ investedTotal() | currency:'BRL' }}</b>Investido</span><span><b>{{ treesPlanted() | number }}</b>Árvores</span><span><b>{{ certificates().length }}</b>Aportes</span></div></section>
+      <h2 class="section-title">Seus investimentos</h2><div class="investment-grid">@for (cert of certificates(); track cert.hash) {<article class="investment-card stat-card"><div class="investment-heading"><div><h3>{{ cert.project }}</h3><small>Certificado: BIO-{{ cert.hash }}</small></div><span class="status-pill">Ativo</span></div><div class="investment-values"><span>Valor investido<strong>{{ cert.amount | currency:'BRL' }}</strong></span><span>Valor atual<strong>{{ cert.amount | currency:'BRL' }}</strong></span></div><div class="progress-track"><span class="progress-green" style="width: 26%"></span></div><div class="investment-footer"><span><lucide-icon [img]="TreePineIcon" size="16"></lucide-icon>{{ Math.floor(cert.amount / 20) }} árvores</span><span><lucide-icon [img]="ZapIcon" size="16"></lucide-icon>{{ cert.amount / 400 | number:'1.3-3' }} t CO2</span><button class="btn-text" (click)="openBlockchainModal(cert.hash)">Ver certificado</button></div></article>} @empty {<div class="empty-state stat-card"><h2>Sua carteira está esperando o primeiro aporte</h2><p>Explore o marketplace e escolha um projeto para começar.</p><button class="btn-primary" (click)="switchTab('marketplace')">Ver projetos</button></div>}</div>
+    }
+
+    @if (activeTab() === 'creditos') {
+      <header class="page-heading"><div><p class="eyebrow">ATIVOS AMBIENTAIS</p><h1>Mercado de Carbono</h1><p>Negocie seus créditos com responsabilidade.</p></div><button class="btn-primary" (click)="openSellCarbonModal()">Registrar venda</button></header>
+      <section class="stats-grid"><article class="stat-card highlight metric-card"><span class="stat-title">Créditos disponíveis</span><strong class="stat-value">{{ carbonCredits() | number:'1.2-2' }} tCO2</strong><small>Venda reduz seus créditos, sem gerar saldo financeiro.</small></article><article class="stat-card metric-card"><span class="stat-title">Demandas abertas</span><strong class="stat-value">17.000 tCO2</strong><small>Natura, Ambev e Mercado Livre</small></article></section>
+      <section class="stat-card demand-panel"><h2>Demandas corporativas abertas</h2><div class="demand-grid"><div><strong>Natura Cosméticos</strong><p>5.000 tCO2 disponíveis</p><b>R$ 128,00 / tCO2</b></div><div><strong>Ambev S.A.</strong><p>12.000 tCO2 disponíveis</p><b>R$ 125,50 / tCO2</b></div></div></section>
+    }
+
+    @if (activeTab() === 'certificados') {
+      <header class="page-heading"><div><p class="eyebrow">REGISTRO DIGITAL</p><h1>Certificados Verdes</h1><p>Seus certificados digitais de impacto ambiental.</p></div></header><div class="certificate-grid">@for (cert of certificates(); track cert.hash) {<article class="certificate-card stat-card"><div class="certificate-top"><div class="certificate-icon"><lucide-icon [img]="ShieldCheckIcon" size="24"></lucide-icon></div><span>Blockchain verificado</span></div><h2>{{ cert.project }}</h2><small>BIO-{{ cert.hash }}</small><div class="certificate-stats"><span><b>{{ Math.floor(cert.amount / 20) }}</b>Árvores vinculadas</span><span><b>{{ cert.amount / 400 | number:'1.3-3' }} t</b>CO2 sequestrado</span></div><div class="certificate-bottom"><span>Investido: {{ cert.amount | currency:'BRL' }}</span><button class="btn-text" (click)="openBlockchainModal(cert.hash)">Ver na blockchain</button></div></article>} @empty {<div class="empty-state stat-card"><h2>Nenhum certificado emitido</h2><p>Faça seu primeiro aporte no Marketplace.</p></div>}</div>
+    }
+
+    @if (activeTab() === 'perfil') {
+      <header class="page-heading"><div><p class="eyebrow">SUA CONTA</p><h1>Meu Perfil</h1><p>Gerencie seus dados e preferências.</p></div></header><div class="stat-card profile-card"><div class="profile-avatar"><lucide-icon [img]="UserIcon" size="40"></lucide-icon></div><div><h2>{{ userProfile().name }}</h2><p>{{ userProfile().email }}</p><small>Investidor ativo desde {{ userProfile().memberSince }}</small></div></div>
+    }
+
+    @if (activeTab() === 'aprenda') {
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">DESCOMPLICANDO O SEU DINHEIRO</p>
+      <h1>Guia & Aprenda</h1>
+      <p>Explicações rápidas para você entender finanças, investir com consciência e usar o BioCapital.</p>
+    </div>
+  </header>
+
+  <!-- O que é Educação Financeira Consciente -->
+  <section class="stat-card impact-panel" style="margin-bottom: 24px;">
+    <h2>💡 O que é uso consciente do dinheiro?</h2>
+    <p style="color: var(--text-muted); margin-top: 8px; line-height: 1.6;">
+      É o hábito de entender exatamente para onde vai o seu capital e tomá-lo como uma ferramenta de transformação. Em vez de apenas gastar, você aprende a distribuir seu dinheiro entre necessidades diárias, reserva de segurança e investimentos que geram rendimento enquanto protegem o planeta.
+    </p>
+  </section>
+
+  <!-- Glossário de Termos Rápido -->
+  <h2 class="section-title">Termos Importantes</h2>
+  <section class="demand-grid" style="margin-bottom: 32px;">
+    <div>
+      <strong>Impact Investing (Investimento de Impacto)</strong>
+      <p>Colocar dinheiro em projetos que trazem retorno financeiro e, ao mesmo tempo, resolvem problemas ambientais ou sociais reais.</p>
+    </div>
+    <div>
+      <strong>Crédito de Carbono (tCO2)</strong>
+      <p>Certificado digital que comprova que 1 tonelada de gás carbônico foi retirada da atmosfera ou deixou de ser emitida.</p>
+    </div>
+    <div>
+      <strong>Aporte</strong>
+      <p>É a quantidade de dinheiro que você escolhe colocar em um projeto do marketplace para começar a investir.</p>
+    </div>
+    <div>
+      <strong>Prazo de Maturação</strong>
+      <p>O tempo necessário para que as árvores do projeto cresçam, gerem impacto total e atinjam o ciclo de rendimento.</p>
+    </div>
+  </section>
+
+  <!-- Como usar o Aplicativo -->
+  <section class="stat-card how-it-works">
+    <h2>🚀 Como usar o BioCapital</h2>
+    <div class="steps-grid">
+      <div>
+        <b>1</b>
+        <h3>Escolha um Projeto</h3>
+        <p>Acesse a aba <strong>Marketplace</strong>, filtre por bioma (Amazônia, Cerrado...) e selecione onde investir.</p>
+      </div>
+      <div>
+        <b>2</b>
+        <h3>Faça seu Aporte</h3>
+        <p>Clique em <strong>Aportar capital</strong>, digite o valor que deseja investir e confirme a transação.</p>
+      </div>
+      <div>
+        <b>3</b>
+        <h3>Acompanhe seus Resultados</h3>
+        <p>Na aba <strong>Minha Carteira</strong>, veja suas árvores plantadas, créditos acumulados e seus certificados em blockchain.</p>
+      </div>
+    </div>
+  </section>
+}
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-brand"><img class="brand-logo footer-logo" src="/logo.png" alt="BioCapital"><span>Capital que regenera.</span></div>
+    <div class="footer-links"><button (click)="switchTab('marketplace')">Projetos ambientais</button><button (click)="openLoginModal()">Acessar conta</button></div>
+    <div class="footer-meta"><span>Decisões melhores. Impacto real.</span><small>© 2026 BioCapital</small></div>
+  </footer>
+</div>
