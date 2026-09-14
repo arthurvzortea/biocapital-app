@@ -16,6 +16,21 @@ type MarketProject = {
   minimum: number;
 };
 
+type CarbonBuyer = {
+  name: string;
+  commitment: string;
+  demand: string;
+  price: string;
+  source: string;
+};
+
+type QuizQuestion = {
+  question: string;
+  options: string[];
+  answer: number;
+  explanation: string;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -59,6 +74,60 @@ export class AppComponent implements OnInit, OnDestroy {
   calcInput = signal<number | string>('');
   marketSearch = signal('');
   marketRegion = signal<'Todos' | MarketProject['region']>('Todos');
+  selectedQuizAnswer = signal<number | null>(null);
+  quizSubmitted = signal(false);
+  quizScore = signal(0);
+  currentQuizIndex = signal(0);
+  carbonBuyers: CarbonBuyer[] = [
+    {
+      name: 'Microsoft',
+      commitment: 'Carbon Negative 2030',
+      demand: 'Compra remoção e redução de emissões para cumprir sua meta climática.',
+      price: 'Cotação sob análise',
+      source: 'microsoft.com/sustainability',
+    },
+    {
+      name: 'Salesforce',
+      commitment: 'Net Zero Marketplace',
+      demand: 'Conecta empresas a projetos de remoção de carbono verificados.',
+      price: 'Cotação sob análise',
+      source: 'salesforce.com/net-zero',
+    },
+    {
+      name: 'Google',
+      commitment: 'Net-zero até 2030',
+      demand: 'Contrata soluções de remoção de carbono de alta integridade.',
+      price: 'Cotação sob análise',
+      source: 'sustainability.google',
+    },
+    {
+      name: 'Shopify',
+      commitment: 'Climate commitment',
+      demand: 'Financia remoções permanentes por meio do Shopify Sustainability Fund.',
+      price: 'Cotação sob análise',
+      source: 'shopify.com/sustainability',
+    },
+  ];
+  quizQuestions: QuizQuestion[] = [
+    {
+      question: 'O que representa 1 crédito de carbono?',
+      options: ['1 kg de CO2 evitado', '1 tonelada de CO2e evitada ou removida', 'R$ 1 investido em uma floresta'],
+      answer: 1,
+      explanation: 'Um crédito representa, em geral, uma tonelada métrica de CO2 equivalente evitada ou removida.',
+    },
+    {
+      question: 'Qual é a melhor prática ao avaliar um projeto ambiental?',
+      options: ['Escolher apenas pelo maior retorno', 'Verificar impacto, metodologia e rastreabilidade', 'Investir sem ler os detalhes'],
+      answer: 1,
+      explanation: 'Metodologia, adicionalidade, verificação independente e rastreabilidade ajudam a avaliar a integridade do projeto.',
+    },
+    {
+      question: 'O que acontece quando você aporta na BioCapital?',
+      options: ['O valor sai do saldo e vira um registro de impacto', 'O saldo dobra automaticamente', 'Você compra ações da empresa'],
+      answer: 0,
+      explanation: 'O aporte reduz o saldo disponível, registra o projeto escolhido e calcula os indicadores de impacto associados.',
+    },
+  ];
   projects: MarketProject[] = [
     {
       name: 'Corredor Atlântico',
@@ -242,11 +311,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.userUnsubscribes.push(onSnapshot(userRef, snapshot => {
       if (!snapshot.exists()) {
         void setDoc(userRef, {
-          balance: 0,
+          balance: 500,
           investedTotal: 0,
           treesPlanted: 0,
           carbonCredits: 0,
-          dataVersion: 2
+          dataVersion: 2,
+          welcomeBonus: 500,
+          welcomeBonusGranted: true,
+          createdAt: new Date().toISOString()
         });
         return;
       }
@@ -254,6 +326,15 @@ export class AppComponent implements OnInit, OnDestroy {
       const data = snapshot.data();
       if (data['dataVersion'] !== 2) {
         void this.resetLegacyAccount(uid, userRef);
+        return;
+      }
+
+      if (!data['welcomeBonusGranted']) {
+        void updateDoc(userRef, {
+          balance: increment(500),
+          welcomeBonus: 500,
+          welcomeBonusGranted: true
+        });
         return;
       }
 
@@ -279,11 +360,13 @@ export class AppComponent implements OnInit, OnDestroy {
     const certificateSnapshot = await getDocs(certificatesRef);
     await Promise.all(certificateSnapshot.docs.map(certificate => deleteDoc(certificate.ref)));
     await setDoc(userRef, {
-      balance: 0,
+      balance: 500,
       investedTotal: 0,
       treesPlanted: 0,
       carbonCredits: 0,
-      dataVersion: 2
+      dataVersion: 2,
+      welcomeBonus: 500,
+      welcomeBonusGranted: true
     }, { merge: true });
   }
 
@@ -322,9 +405,48 @@ export class AppComponent implements OnInit, OnDestroy {
     this.marketRegion.set(region);
   }
 
+  chooseQuizAnswer(index: number) {
+    if (!this.quizSubmitted()) this.selectedQuizAnswer.set(index);
+  }
+
+  submitQuiz() {
+    const answer = this.selectedQuizAnswer();
+    if (answer === null) {
+      this.showToast('Escolha uma alternativa antes de conferir.', 'error');
+      return;
+    }
+    const currentQuestion = this.quizQuestions[this.currentQuizIndex()];
+    if (answer === currentQuestion.answer) this.quizScore.update(score => score + 1);
+    this.quizSubmitted.set(true);
+  }
+
+  nextQuizQuestion() {
+    if (this.currentQuizIndex() < this.quizQuestions.length - 1) {
+      this.currentQuizIndex.update(index => index + 1);
+      this.selectedQuizAnswer.set(null);
+      this.quizSubmitted.set(false);
+    }
+  }
+
+  resetQuiz() {
+    this.selectedQuizAnswer.set(null);
+    this.quizSubmitted.set(false);
+    this.quizScore.set(0);
+    this.currentQuizIndex.set(0);
+  }
+
+  private sanitizeNonNegativeAmount(value: number | string, minimum: number, label: string): number | null {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(parsed) || parsed < minimum) {
+      this.showToast(label, 'error');
+      return null;
+    }
+    return parsed;
+  }
+
   processInvestment(amountStr: string) {
-    const amount = Number(amountStr);
-    if (isNaN(amount) || amount < 50) { this.showToast('Valor mínimo de aporte é R$ 50,00', 'error'); return; }
+    const amount = this.sanitizeNonNegativeAmount(amountStr, 50, 'Valor mínimo de aporte é R$ 50,00');
+    if (amount === null) { return; }
     if (amount > this.balance()) { this.showToast('Saldo insuficiente para este aporte.', 'error'); return; }
 
     const uid = this.userProfile().uid;
@@ -354,8 +476,10 @@ export class AppComponent implements OnInit, OnDestroy {
   openSellCarbonModal() { this.showSellModal.set(true); }
 
   processCarbonSale(qtyStr: string, priceStr: string) {
-    const qty = Number(qtyStr); const price = Number(priceStr);
-    if (isNaN(qty) || qty <= 0 || qty > this.carbonCredits()) { this.showToast('Quantidade inválida ou saldo insuficiente.', 'error'); return; }
+    const qty = this.sanitizeNonNegativeAmount(qtyStr, 0.01, 'Quantidade inválida ou saldo insuficiente.');
+    const price = this.sanitizeNonNegativeAmount(priceStr, 0.01, 'Preço inválido para a venda.');
+    if (qty === null || price === null) { return; }
+    if (qty > this.carbonCredits()) { this.showToast('Quantidade inválida ou saldo insuficiente.', 'error'); return; }
     const uid = this.userProfile().uid;
     if (!uid) { this.openLoginModal(); return; }
 

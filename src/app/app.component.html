@@ -145,9 +145,9 @@
     }
 
     @if (activeTab() === 'creditos') {
-      <header class="page-heading"><div><p class="eyebrow">ATIVOS AMBIENTAIS</p><h1>Mercado de Carbono</h1><p>Negocie seus créditos com responsabilidade.</p></div><button class="btn-primary" (click)="openSellCarbonModal()">Registrar venda</button></header>
-      <section class="stats-grid"><article class="stat-card highlight metric-card"><span class="stat-title">Créditos disponíveis</span><strong class="stat-value">{{ carbonCredits() | number:'1.2-2' }} tCO2</strong><small>Venda reduz seus créditos, sem gerar saldo financeiro.</small></article><article class="stat-card metric-card"><span class="stat-title">Demandas abertas</span><strong class="stat-value">17.000 tCO2</strong><small>Natura, Ambev e Mercado Livre</small></article></section>
-      <section class="stat-card demand-panel"><h2>Demandas corporativas abertas</h2><div class="demand-grid"><div><strong>Natura Cosméticos</strong><p>5.000 tCO2 disponíveis</p><b>R$ 128,00 / tCO2</b></div><div><strong>Ambev S.A.</strong><p>12.000 tCO2 disponíveis</p><b>R$ 125,50 / tCO2</b></div></div></section>
+      <header class="page-heading"><div><p class="eyebrow">ATIVOS AMBIENTAIS</p><h1>Mercado de Carbono</h1><p>Encontre demanda corporativa e negocie créditos com rastreabilidade.</p></div><button class="btn-primary" (click)="openSellCarbonModal()">Registrar venda</button></header>
+      <section class="stats-grid credit-stats"><article class="stat-card highlight metric-card"><span class="stat-title">Créditos disponíveis</span><strong class="stat-value">{{ carbonCredits() | number:'1.2-2' }} tCO2</strong><small>Venda reduz seus créditos; o valor é combinado com o comprador.</small></article><article class="stat-card metric-card"><span class="stat-title">Empresas mapeadas</span><strong class="stat-value">{{ carbonBuyers.length }}</strong><small>Organizações com compromissos públicos de descarbonização.</small></article></section>
+      <section class="stat-card demand-panel"><div class="panel-heading"><div><p class="eyebrow">DEMANDA CORPORATIVA</p><h2>Quem procura soluções de carbono</h2><p>Os programas abaixo são públicos. Disponibilidade, elegibilidade e preço devem ser confirmados diretamente com cada empresa.</p></div></div><div class="buyer-grid">@for (buyer of carbonBuyers; track buyer.name) {<article class="buyer-card"><div class="buyer-heading"><strong>{{ buyer.name }}</strong><span>{{ buyer.commitment }}</span></div><p>{{ buyer.demand }}</p><div class="buyer-meta"><b>{{ buyer.price }}</b><a [href]="'https://' + buyer.source" target="_blank" rel="noopener">Ver programa</a></div></article>}</div></section>
     }
 
     @if (activeTab() === 'certificados') {
@@ -216,6 +216,17 @@
         <p>Na aba <strong>Minha Carteira</strong>, veja suas árvores plantadas, créditos acumulados e seus certificados em blockchain.</p>
       </div>
     </div>
+  </section>
+
+  <section class="stat-card quiz-panel">
+    <div class="quiz-heading"><div><p class="eyebrow">APRENDA NA PRÁTICA</p><h2>Teste seus conhecimentos</h2><p>Responda três perguntas sobre o que você acabou de aprender.</p></div><span class="quiz-progress">{{ currentQuizIndex() + 1 }} / {{ quizQuestions.length }}</span></div>
+    @if (!quizSubmitted() || currentQuizIndex() < quizQuestions.length - 1) {
+      <div class="quiz-question"><h3>{{ quizQuestions[currentQuizIndex()].question }}</h3><div class="quiz-options">@for (option of quizQuestions[currentQuizIndex()].options; track option; let optionIndex = $index) {<button class="quiz-option" [class.selected]="selectedQuizAnswer() === optionIndex" [class.correct]="quizSubmitted() && optionIndex === quizQuestions[currentQuizIndex()].answer" [class.wrong]="quizSubmitted() && selectedQuizAnswer() === optionIndex && optionIndex !== quizQuestions[currentQuizIndex()].answer" (click)="chooseQuizAnswer(optionIndex)">{{ option }}</button>}</div></div>
+      @if (quizSubmitted()) {<p class="quiz-feedback">{{ quizQuestions[currentQuizIndex()].explanation }}</p>}
+      <div class="quiz-actions">@if (!quizSubmitted()) {<button class="btn-primary" (click)="submitQuiz()">Conferir resposta</button>} @else {<button class="btn-primary" (click)="nextQuizQuestion()">Próxima pergunta</button>}</div>
+    } @else {
+      <div class="quiz-result"><strong>{{ quizScore() }} / {{ quizQuestions.length }}</strong><p>{{ quizScore() === quizQuestions.length ? 'Excelente! Você já pode explorar seus créditos com mais segurança.' : 'Boa tentativa. Revise o guia e tente novamente para fixar o conteúdo.' }}</p><button class="btn-secondary" (click)="resetQuiz()">Refazer quiz</button></div>
+    }
   </section>
 }
   </main>

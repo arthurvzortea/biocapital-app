@@ -1,23 +1,48 @@
 rules_version = '2';
 
 service cloud.firestore {
+  function isValidUserData(data) {
+    return data.keys().hasOnly(['balance', 'investedTotal', 'treesPlanted', 'carbonCredits', 'dataVersion', 'welcomeBonus', 'welcomeBonusGranted', 'createdAt'])
+      && data.balance is number && data.balance >= 0
+      && data.investedTotal is number && data.investedTotal >= 0
+      && data.treesPlanted is number && data.treesPlanted >= 0
+      && data.carbonCredits is number && data.carbonCredits >= 0
+      && data.dataVersion == 2
+      && data.welcomeBonus is number && data.welcomeBonus >= 0
+      && data.welcomeBonusGranted is bool
+      && data.createdAt is string && data.createdAt.size() > 0;
+  }
+
   match /databases/{database}/documents {
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
+
       allow create: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.balance == 0
+        && isValidUserData(request.resource.data)
+        && request.resource.data.balance == 500
         && request.resource.data.investedTotal == 0
         && request.resource.data.treesPlanted == 0
         && request.resource.data.carbonCredits == 0
-        && request.resource.data.dataVersion == 2;
+        && request.resource.data.welcomeBonus == 500
+        && request.resource.data.welcomeBonusGranted == true;
+
       allow update: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.balance >= 0
-        && request.resource.data.balance <= resource.data.balance;
+        && isValidUserData(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.dataVersion == 2
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance', 'investedTotal', 'treesPlanted', 'carbonCredits', 'welcomeBonus', 'welcomeBonusGranted']);
 
       match /certificates/{certificateId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update, delete: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.keys().hasOnly(['hash', 'project', 'amount', 'date'])
+          && request.resource.data.hash is string && request.resource.data.hash.size() > 0
+          && request.resource.data.project is string && request.resource.data.project.size() > 0
+          && request.resource.data.amount is number && request.resource.data.amount > 0
+          && request.resource.data.date is string && request.resource.data.date.size() > 0;
       }
     }
   }
