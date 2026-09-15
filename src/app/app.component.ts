@@ -1,6 +1,6 @@
 import { Component, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LucideAngularModule, TreePine, Bot, ShieldCheck, Zap, Sun, Moon, X, LogOut, TrendingUp, FileCheck, User } from 'lucide-angular';
+import { LucideAngularModule, TreePine, Bot, ShieldCheck, Zap, Sun, Moon, X, LogOut, TrendingUp, FileCheck, User, Accessibility, TextCursorInput, PauseCircle } from 'lucide-angular';
 import { GoogleAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, Unsubscribe, updateProfile } from 'firebase/auth';
 import { addDoc, collection, deleteDoc, doc, getDocs, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './services/firebase';
@@ -39,12 +39,27 @@ type QuizQuestion = {
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private readonly initialBalance = 67.67;
   Math = Math;
   TreePineIcon = TreePine; BotIcon = Bot; ShieldCheckIcon = ShieldCheck; ZapIcon = Zap;
   SunIcon = Sun; MoonIcon = Moon; XIcon = X; LogOutIcon = LogOut;
   TrendingUpIcon = TrendingUp; FileCheckIcon = FileCheck; UserIcon = User;
+  AccessibilityIcon = Accessibility; TextCursorInputIcon = TextCursorInput; PauseCircleIcon = PauseCircle;
 
   isDarkMode = false;
+  highContrast = signal(false);
+  largeText = signal(false);
+  reducedMotion = signal(false);
+  private lastFocusedElement: HTMLElement | null = null;
+  private readonly keydownHandler = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+
+    if (this.showBlockchainModal()) this.closeModals();
+    else if (this.showSellModal()) this.closeModals();
+    else if (this.showInvestModal()) this.closeModals();
+    else if (this.showLoginModal()) this.showLoginModal.set(false);
+  };
+
   activeTab = signal<'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda'>('dashboard');
   showOnboarding = signal(true);
   showLoginModal = signal(false);
@@ -127,6 +142,36 @@ export class AppComponent implements OnInit, OnDestroy {
       answer: 0,
       explanation: 'O aporte reduz o saldo disponível, registra o projeto escolhido e calcula os indicadores de impacto associados.',
     },
+    {
+      question: 'Por que diversificar entre projetos ambientais?',
+      options: ['Para distribuir riscos entre diferentes projetos e regiões', 'Para garantir lucro todos os dias', 'Para evitar acompanhar os resultados'],
+      answer: 0,
+      explanation: 'Diversificar ajuda a distribuir riscos ambientais, operacionais e de execução entre diferentes projetos e regiões.',
+    },
+    {
+      question: 'O que significa retorno anual estimado?',
+      options: ['Uma promessa de lucro garantido', 'Uma projeção baseada nas características do projeto', 'O valor que será descontado do saldo'],
+      answer: 1,
+      explanation: 'O retorno anual é uma estimativa e pode variar conforme o desempenho, o prazo e os riscos de cada projeto.',
+    },
+    {
+      question: 'Qual informação aumenta a transparência de um crédito de carbono?',
+      options: ['Uma promessa sem documentos', 'A rastreabilidade do projeto e sua verificação', 'Apenas o nome da empresa compradora'],
+      answer: 1,
+      explanation: 'Rastreabilidade, metodologia e verificação independente ajudam a comprovar a origem e a integridade do crédito.',
+    },
+    {
+      question: 'O que representa a maturação de um projeto?',
+      options: ['O prazo estimado para o projeto atingir seus resultados', 'A taxa cobrada em cada aporte', 'O número de acessos ao aplicativo'],
+      answer: 0,
+      explanation: 'A maturação indica o horizonte esperado para que o projeto desenvolva suas atividades e gere resultados.',
+    },
+    {
+      question: 'Antes de investir, qual atitude é mais responsável?',
+      options: ['Investir todo o dinheiro disponível', 'Ler os detalhes, avaliar os riscos e considerar seu objetivo', 'Escolher somente o projeto com maior percentual'],
+      answer: 1,
+      explanation: 'Uma decisão responsável considera objetivo, prazo, risco, liquidez e as informações disponíveis sobre o projeto.',
+    },
   ];
   projects: MarketProject[] = [
     {
@@ -200,10 +245,67 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   });
 
+  portfolioYield = computed(() => {
+    return this.certificates().reduce((total, cert) => {
+      const project = this.projects.find(item => item.name === cert.project);
+      const annualRate = project?.returnRate ?? 0;
+      return total + (cert.amount * annualRate) / 100;
+    }, 0);
+  });
+
+  annualYieldRate = computed(() => {
+    if (!this.investedTotal()) return 0;
+    return (this.portfolioYield() / this.investedTotal()) * 100;
+  });
+
+  monthlyYield = computed(() => this.portfolioYield() / 12);
+  quarterlyYield = computed(() => this.portfolioYield() / 4);
+  netYield = computed(() => this.portfolioYield() * 0.82);
+  projectedValue = computed(() => this.investedTotal() + this.portfolioYield());
+  netMonthlyYield = computed(() => this.netYield() / 12);
+  netQuarterlyYield = computed(() => this.netYield() / 4);
+
+  investimentosAgrupados = computed(() => {
+    const agrupado = new Map<string, {
+      project: string;
+      certificados: string[];
+      valorTotal: number;
+      arvoresTotal: number;
+      co2Total: number;
+      meta: number;
+    }>();
+
+    for (const cert of this.certificates()) {
+      const projectName = cert.project;
+      const metaProjeto = this.projects.find(project => project.name === projectName)?.treeGoal ?? 10000;
+      const atual = agrupado.get(projectName) ?? {
+        project: projectName,
+        certificados: [],
+        valorTotal: 0,
+        arvoresTotal: 0,
+        co2Total: 0,
+        meta: metaProjeto
+      };
+
+      atual.certificados.push(cert.hash);
+      atual.valorTotal += cert.amount;
+      atual.arvoresTotal += Math.floor(cert.amount / 20);
+      atual.co2Total += cert.amount / 400;
+      agrupado.set(projectName, atual);
+    }
+
+    return Array.from(agrupado.values());
+  });
+
   calcTrees = computed(() => Math.floor((Number(this.calcInput()) || 0) / 20));
   calcKm = computed(() => Math.floor((Number(this.calcInput()) || 0) * 1.5));
   calcRF = computed(() => (Number(this.calcInput()) || 0) * 1.12);
   ngOnInit() {
+    this.isDarkMode = true;
+    document.documentElement.classList.add('theme-dark');
+    this.applyAccessibilitySettings();
+    document.addEventListener('keydown', this.keydownHandler);
+
     this.authUnsubscribe = onAuthStateChanged(auth, user => {
       this.clearUserListeners();
 
@@ -225,8 +327,33 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    document.removeEventListener('keydown', this.keydownHandler);
     this.authUnsubscribe?.();
     this.clearUserListeners();
+  }
+
+  private applyAccessibilitySettings() {
+    document.body.classList.toggle('a11y-high-contrast', this.highContrast());
+    document.body.classList.toggle('a11y-large-text', this.largeText());
+    document.body.classList.toggle('a11y-reduced-motion', this.reducedMotion());
+  }
+
+  toggleHighContrast() {
+    this.highContrast.set(!this.highContrast());
+    this.applyAccessibilitySettings();
+    this.showToast(this.highContrast() ? 'Alto contraste ativado.' : 'Alto contraste desativado.', 'success');
+  }
+
+  toggleLargeText() {
+    this.largeText.set(!this.largeText());
+    this.applyAccessibilitySettings();
+    this.showToast(this.largeText() ? 'Texto ampliado ativado.' : 'Texto ampliado desativado.', 'success');
+  }
+
+  toggleReducedMotion() {
+    this.reducedMotion.set(!this.reducedMotion());
+    this.applyAccessibilitySettings();
+    this.showToast(this.reducedMotion() ? 'Redução de movimento ativada.' : 'Redução de movimento desativada.', 'success');
   }
 
   switchTab(tab: 'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda') {
@@ -243,9 +370,36 @@ export class AppComponent implements OnInit, OnDestroy {
     document.documentElement.classList.toggle('theme-dark', this.isDarkMode);
   }
 
+  openModalWithFocus(modalName: 'login' | 'invest' | 'sell' | 'blockchain') {
+    this.lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    if (modalName === 'login') this.showLoginModal.set(true);
+    if (modalName === 'invest') this.showInvestModal.set(true);
+    if (modalName === 'sell') this.showSellModal.set(true);
+    if (modalName === 'blockchain') this.showBlockchainModal.set(true);
+
+    setTimeout(() => {
+      const modal = document.querySelector('.modal-box, .modal-overlay, .onboarding-box') as HTMLElement | null;
+      const firstButton = modal?.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])') as HTMLElement | null;
+      if (firstButton) {
+        firstButton.focus();
+      }
+    }, 0);
+  }
+
   closeOnboarding() { this.showOnboarding.set(false); }
-  closeModals() { this.showInvestModal.set(false); this.showSellModal.set(false); this.showBlockchainModal.set(false); }
-  openLoginModal() { this.authMode.set('login'); this.showLoginModal.set(true); }
+  closeModals() {
+    this.showInvestModal.set(false);
+    this.showSellModal.set(false);
+    this.showBlockchainModal.set(false);
+    this.showLoginModal.set(false);
+
+    if (this.lastFocusedElement) {
+      this.lastFocusedElement.focus();
+      this.lastFocusedElement = null;
+    }
+  }
+  openLoginModal() { this.authMode.set('login'); this.openModalWithFocus('login'); }
 
   openRegisterModal() { this.authMode.set('register'); this.showLoginModal.set(true); }
 
@@ -311,12 +465,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.userUnsubscribes.push(onSnapshot(userRef, snapshot => {
       if (!snapshot.exists()) {
         void setDoc(userRef, {
-          balance: 500,
+          balance: this.initialBalance,
           investedTotal: 0,
           treesPlanted: 0,
           carbonCredits: 0,
           dataVersion: 2,
-          welcomeBonus: 500,
+          welcomeBonus: this.initialBalance,
           welcomeBonusGranted: true,
           createdAt: new Date().toISOString()
         });
@@ -331,8 +485,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
       if (!data['welcomeBonusGranted']) {
         void updateDoc(userRef, {
-          balance: increment(500),
-          welcomeBonus: 500,
+          balance: increment(this.initialBalance),
+          welcomeBonus: this.initialBalance,
           welcomeBonusGranted: true
         });
         return;
@@ -360,12 +514,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const certificateSnapshot = await getDocs(certificatesRef);
     await Promise.all(certificateSnapshot.docs.map(certificate => deleteDoc(certificate.ref)));
     await setDoc(userRef, {
-      balance: 500,
+      balance: this.initialBalance,
       investedTotal: 0,
       treesPlanted: 0,
       carbonCredits: 0,
       dataVersion: 2,
-      welcomeBonus: 500,
+      welcomeBonus: this.initialBalance,
       welcomeBonusGranted: true
     }, { merge: true });
   }
