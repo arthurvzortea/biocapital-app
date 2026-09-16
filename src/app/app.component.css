@@ -2876,3 +2876,124 @@ button:disabled {
   padding: 16px 18px;
   border-radius: 12px;
 }
+
+/* =========================================
+   OTIMIZAÇÃO RESPONSIVA AVANÇADA (MOBILE-FIRST)
+========================================= */
+
+/* Fix para telas até 900px (Tablets e Celulares Grandes) */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 280px !important;
+    height: 100vh;
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.3);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 280px !important;
+  }
+
+  .dashboard-split,
+  .monitor-grid,
+  .credit-command-grid,
+  .consultor-grid,
+  .buyer-grid,
+  .company-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  .carbon-growth-panel {
+    padding-left: 0 !important;
+    border-left: none !important;
+    border-top: var(--border-width) solid var(--border-color);
+    padding-top: 20px;
+  }
+}
+
+/* Fix para celulares intermediários e pequenos (<= 640px) */
+@media (max-width: 640px) {
+  .main-content {
+    padding: 16px 12px !important;
+  }
+
+  .top-nav {
+    padding: 10px 12px !important;
+    gap: 8px;
+  }
+
+  .live-balance-pill {
+    min-width: auto !important;
+    padding: 4px 8px !important;
+  }
+
+  .balance-label {
+    display: none;
+  }
+
+  .balance-value {
+    font-size: 0.9rem !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px !important;
+  }
+
+  .stat-value {
+    font-size: 1.5rem !important;
+  }
+
+  .modal-box,
+  .onboarding-box,
+  .sell-modal {
+    width: calc(100vw - 24px) !important;
+    max-height: 85vh !important;
+    padding: 20px 16px !important;
+  }
+
+  .line-chart,
+  .carbon-chart {
+    height: 150px !important;
+    gap: 4px !important;
+  }
+
+  .reforestation-map svg {
+    height: 220px !important;
+  }
+}
+
+/* Fix para celulares muito pequenos (iPhone SE, Galaxy Fold <= 375px) */
+@media (max-width: 375px) {
+  .page-heading h1,
+  .dashboard-heading h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+    padding: 10px 14px !important;
+    font-size: 0.88rem !important;
+  }
+
+  .quiz-option {
+    padding: 10px 12px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .buyer-heading strong {
+    white-space: normal !important;
+  }
+}
