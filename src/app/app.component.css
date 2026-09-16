@@ -170,12 +170,25 @@ body.a11y-high-contrast,
   width: clamp(140px, 15vw, 220px);
   height: auto;
   object-fit: contain;
-  background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(241,245,249,0.9));
+  /* Fundo dinâmico que usa as variáveis do tema ativo */
+  background: linear-gradient(180deg, var(--surface-color), var(--surface-alt));
   border: var(--border-width) solid var(--border-color);
   border-radius: 18px;
   padding: 9px 12px;
-  box-shadow: 4px 4px 0 rgba(15, 23, 42, 0.08);
-  filter: drop-shadow(0 2px 0 rgba(15, 23, 42, 0.08));
+  box-shadow: 4px 4px 0 var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+html.theme-dark .brand-logo,
+:host-context(.theme-dark) .brand-logo {
+  background: #ffffff !important;
+  border-color: var(--accent-green) !important;
+  box-shadow: 4px 4px 0px var(--accent-green) !important;
+}
+
+html.theme-dark .brand-logo img,
+:host-context(.theme-dark) .brand-logo img {
+  filter: contrast(1.1);
 }
 
 .nav-logo {
