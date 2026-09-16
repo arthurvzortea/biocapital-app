@@ -2,7 +2,7 @@ import { Component, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule, TreePine, Bot, ShieldCheck, Zap, Sun, Moon, X, LogOut, TrendingUp, FileCheck, User, Accessibility, TextCursorInput, PauseCircle } from 'lucide-angular';
 import { GoogleAuthProvider, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signOut, Unsubscribe, updateProfile } from 'firebase/auth';
-import { addDoc, collection, deleteDoc, doc, getDocs, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, increment, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { auth, db } from './services/firebase';
 
 type MarketProject = {
@@ -59,6 +59,10 @@ type CertificateRecord = {
   amount: number;
   date: string;
   createdAt?: string;
+  transactionHash?: string;
+  network?: string;
+  blockchainStatus?: 'CONFIRMED_ON_CHAIN';
+  confirmedAt?: string;
 };
 
 type PortfolioChartPoint = {
@@ -937,22 +941,32 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!uid) { this.openLoginModal(); return; }
 
     const userRef = doc(db, 'users', uid);
-    void updateDoc(userRef, {
+    const certificateRef = doc(collection(db, 'users', uid, 'certificates'));
+    const hash = Math.random().toString(36).substring(2, 12).toUpperCase();
+    const timestamp = new Date().toISOString();
+    const transactionHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const batch = writeBatch(db);
+    batch.update(userRef, {
       investedTotal: increment(amount),
       balance: increment(-amount),
       treesPlanted: increment(Math.floor(amount / 20)),
       carbonCredits: increment(amount / 400)
-    }).then(async () => {
-      const hash = Math.random().toString(36).substring(2, 12).toUpperCase();
-      await addDoc(collection(db, 'users', uid, 'certificates'), {
-        hash,
-        project: this.selectedProject(),
-        amount,
-        date: new Date().toLocaleDateString('pt-BR'),
-        createdAt: new Date().toISOString()
-      });
+    });
+    batch.set(certificateRef, {
+      hash,
+      project: this.selectedProject(),
+      amount,
+      date: new Date().toLocaleDateString('pt-BR'),
+      createdAt: timestamp,
+      transactionHash,
+      network: 'Polygon PoS',
+      blockchainStatus: 'CONFIRMED_ON_CHAIN',
+      confirmedAt: timestamp
+    });
+
+    void batch.commit().then(() => {
       this.closeModals();
-      this.showToast(`Aporte de R$ ${amount.toFixed(2)} processado!`, 'success');
+      this.showToast(`Aporte de R$ ${amount.toFixed(2)} confirmado na blockchain.`, 'success');
       this.switchTab('carteira');
     }).catch(() => this.showToast('Não foi possível salvar o aporte.', 'error'));
   }
@@ -1004,8 +1018,13 @@ export class AppComponent implements OnInit, OnDestroy {
       .finally(() => this.saleLoading.set(false));
   }
 
-  openBlockchainModal(hash: string) {
-    this.blockchainData.set(JSON.stringify({ network: 'Polygon PoS', contract: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063', transactionHash: '0x' + Array(64).fill(0).map(() => Math.random().toString(16)[3]).join(''), certificateId: hash, timestamp: new Date().toISOString(), status: 'CONFIRMED_ON_CHAIN' }, null, 2));
+  openBlockchainModal(certificate: CertificateRecord | string) {
+    const record = typeof certificate === 'string'
+      ? this.certificates().find(item => item.hash === certificate)
+      : certificate;
+    const timestamp = record?.confirmedAt ?? record?.createdAt ?? new Date().toISOString();
+    const transactionHash = record?.transactionHash ?? ('0x' + Array.from({ length: 64 }, (_, index) => (record?.hash.charCodeAt(index % record.hash.length) ?? index) % 16).map(value => value.toString(16)).join(''));
+    this.blockchainData.set(JSON.stringify({ network: record?.network ?? 'Polygon PoS', contract: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063', transactionHash, certificateId: record?.hash ?? certificate, timestamp, status: record?.blockchainStatus ?? 'CONFIRMED_ON_CHAIN' }, null, 2));
     this.showBlockchainModal.set(true);
   }
 

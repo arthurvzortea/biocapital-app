@@ -38,11 +38,16 @@ service cloud.firestore {
         allow read: if request.auth != null && request.auth.uid == userId;
         allow create, update, delete: if request.auth != null
           && request.auth.uid == userId
-          && request.resource.data.keys().hasOnly(['hash', 'project', 'amount', 'date'])
+          && request.resource.data.keys().hasOnly(['hash', 'project', 'amount', 'date', 'createdAt', 'transactionHash', 'network', 'blockchainStatus', 'confirmedAt'])
           && request.resource.data.hash is string && request.resource.data.hash.size() > 0
           && request.resource.data.project is string && request.resource.data.project.size() > 0
           && request.resource.data.amount is number && request.resource.data.amount > 0
-          && request.resource.data.date is string && request.resource.data.date.size() > 0;
+          && request.resource.data.date is string && request.resource.data.date.size() > 0
+          && request.resource.data.createdAt is string && request.resource.data.createdAt.size() > 0
+          && request.resource.data.transactionHash is string && request.resource.data.transactionHash.size() == 66
+          && request.resource.data.network == 'Polygon PoS'
+          && request.resource.data.blockchainStatus == 'CONFIRMED_ON_CHAIN'
+          && request.resource.data.confirmedAt is string && request.resource.data.confirmedAt.size() > 0;
       }
     }
   }
