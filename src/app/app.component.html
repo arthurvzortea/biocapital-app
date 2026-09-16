@@ -92,30 +92,71 @@
 
   <div class="toast-container" aria-live="polite" aria-atomic="true">@for (toast of toasts(); track toast.id) { <div class="toast" [ngClass]="toast.type" role="status">{{ toast.message }}</div> }</div>
 
-  <nav class="top-nav" aria-label="Navegação principal">
-    <div class="brand-container"><img class="brand-logo nav-logo" src="/logo.png" alt="BioCapital"></div>
-    <ul class="nav-links">
-      <li><button class="nav-link" [class.active]="activeTab() === 'dashboard'" (click)="switchTab('dashboard')">Início</button></li>
-      <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
-      <li><button class="nav-link" [class.active]="activeTab() === 'aprenda'" (click)="switchTab('aprenda')">Aprenda</button></li>
-      @if (isLoggedIn()) {
-        <li><button class="nav-link" [class.active]="activeTab() === 'carteira'" (click)="switchTab('carteira')">Minha Carteira</button></li>
-        <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
-        <li><button class="nav-link" [class.active]="activeTab() === 'certificados'" (click)="switchTab('certificados')">Certificados</button></li>
-        <li><button class="nav-link" [class.active]="activeTab() === 'perfil'" (click)="switchTab('perfil')">Perfil</button></li>
-      }
-    </ul>
-    <div class="nav-actions">
-      <div class="live-balance-pill"><span class="balance-label">Saldo disponível</span><span class="balance-value">{{ balance() | currency:'BRL' }}</span></div>
-      <button class="btn-secondary icon-button" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'" title="Alternar tema"><lucide-icon [img]="isDarkMode ? SunIcon : MoonIcon" size="18"></lucide-icon></button>
-      <button class="btn-secondary icon-button" [class.accessibility-active]="highContrast()" (click)="toggleHighContrast()" [attr.aria-pressed]="highContrast()" [attr.aria-label]="highContrast() ? 'Desativar alto contraste' : 'Ativar alto contraste'" title="Alto contraste"><lucide-icon [img]="AccessibilityIcon" size="18"></lucide-icon></button>
-      <button class="btn-secondary icon-button" [class.accessibility-active]="largeText()" (click)="toggleLargeText()" [attr.aria-pressed]="largeText()" [attr.aria-label]="largeText() ? 'Desativar texto ampliado' : 'Ampliar texto'" title="Tamanho do texto"><lucide-icon [img]="TextCursorInputIcon" size="18"></lucide-icon></button>
-      <button class="btn-secondary icon-button" [class.accessibility-active]="reducedMotion()" (click)="toggleReducedMotion()" [attr.aria-pressed]="reducedMotion()" [attr.aria-label]="reducedMotion() ? 'Desativar redução de movimento' : 'Ativar redução de movimento'" title="Reduzir movimento"><lucide-icon [img]="PauseCircleIcon" size="18"></lucide-icon></button>
-      @if (!isLoggedIn()) { <button class="btn-primary" (click)="openLoginModal()">Login</button> } @else { <button class="btn-secondary icon-button logout-button" (click)="logout()" aria-label="Sair"><lucide-icon [img]="LogOutIcon" size="18"></lucide-icon></button> }
-    </div>
-  </nav>
+  <div class="app-shell">
+    <aside class="sidebar" [class.collapsed]="!sidebarOpen()" aria-label="Navegação lateral">
+      <div class="sidebar-header">
+        <div class="brand-container sidebar-brand">
+          <div class="brand-mark" aria-label="BioCapital" role="img">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <defs>
+                <linearGradient id="brandGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+                  <stop offset="0%" stop-color="#9ef6c8"/>
+                  <stop offset="100%" stop-color="#2dd4bf"/>
+                </linearGradient>
+              </defs>
+              <circle cx="32" cy="32" r="28" fill="rgba(12, 18, 25, 0.24)"/>
+              <path d="M19 39C22.5 27 31 20 45 17C41 29 34 35 19 39Z" fill="url(#brandGradient)"/>
+              <path d="M26 23C30 26.5 38.5 31 45 33" fill="none" stroke="#ecfdf5" stroke-width="3.2" stroke-linecap="round"/>
+              <path d="M35 18L45 18L45 28" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M25 39L41 23" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round"/>
+              <path d="M41 24L41 18L35 18" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          @if (sidebarOpen()) { <span class="brand-text">BioCapital</span> }
+        </div>
+        <button class="sidebar-toggle" type="button" (click)="toggleSidebar()" [attr.aria-label]="sidebarOpen() ? 'Fechar navegação lateral' : 'Abrir navegação lateral'">
+          <lucide-icon [img]="sidebarOpen() ? XIcon : BotIcon" size="18"></lucide-icon>
+        </button>
+      </div>
 
-  <main id="main-content" class="main-content" tabindex="-1">
+      @for (group of sidebarGroups; track group.title) {
+        <div class="sidebar-section">
+          @if (sidebarOpen()) {
+            <span class="sidebar-section-title">{{ group.title }}</span>
+          }
+          <div class="sidebar-list">
+            @for (item of group.items; track item.value) {
+              <button class="sidebar-item" [class.active]="activeTab() === item.value" (click)="switchTab(item.value)">
+                <span class="sidebar-item-label">{{ item.label }}</span>
+                @if (sidebarOpen()) {
+                  <small>{{ item.caption }}</small>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </aside>
+
+    <div class="main-shell">
+      <nav class="top-nav" aria-label="Navegação principal">
+        <div class="brand-container mobile-brand"><img class="brand-logo nav-logo" src="/logo.png" alt="BioCapital"></div>
+        <ul class="nav-links">
+          <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
+          <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
+          <li><button class="nav-link" [class.active]="activeTab() === 'aprenda'" (click)="switchTab('aprenda')">Aprenda</button></li>
+        </ul>
+        <div class="nav-actions">
+          <div class="live-balance-pill"><span class="balance-label">Saldo disponível</span><span class="balance-value">{{ balance() | currency:'BRL' }}</span></div>
+          <button class="btn-secondary icon-button" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'" title="Alternar tema"><lucide-icon [img]="isDarkMode ? SunIcon : MoonIcon" size="18"></lucide-icon></button>
+          <button class="btn-secondary icon-button" [class.accessibility-active]="highContrast()" (click)="toggleHighContrast()" [attr.aria-pressed]="highContrast()" [attr.aria-label]="highContrast() ? 'Desativar alto contraste' : 'Ativar alto contraste'" title="Alto contraste"><lucide-icon [img]="AccessibilityIcon" size="18"></lucide-icon></button>
+          <button class="btn-secondary icon-button" [class.accessibility-active]="largeText()" (click)="toggleLargeText()" [attr.aria-pressed]="largeText()" [attr.aria-label]="largeText() ? 'Desativar texto ampliado' : 'Ampliar texto'" title="Tamanho do texto"><lucide-icon [img]="TextCursorInputIcon" size="18"></lucide-icon></button>
+          <button class="btn-secondary icon-button" [class.accessibility-active]="reducedMotion()" (click)="toggleReducedMotion()" [attr.aria-pressed]="reducedMotion()" [attr.aria-label]="reducedMotion() ? 'Desativar redução de movimento' : 'Ativar redução de movimento'" title="Reduzir movimento"><lucide-icon [img]="PauseCircleIcon" size="18"></lucide-icon></button>
+          @if (!isLoggedIn()) { <button class="btn-primary" (click)="openLoginModal()">Login</button> } @else { <button class="btn-secondary icon-button logout-button" (click)="logout()" aria-label="Sair"><lucide-icon [img]="LogOutIcon" size="18"></lucide-icon></button> }
+        </div>
+      </nav>
+
+      <main id="main-content" class="main-content" tabindex="-1">
     @if (activeTab() === 'dashboard') {
       <header class="page-heading dashboard-heading"><div><p class="eyebrow">IMPACT INVESTING</p><h1>Sua Carteira Viva</h1><p>Faça seu patrimônio crescer enquanto o mundo recupera o fôlego.</p></div><button class="btn-primary" (click)="switchTab('marketplace')">Explorar projetos</button></header>
 
@@ -160,6 +201,37 @@
 
     @if (activeTab() === 'perfil') {
       <header class="page-heading"><div><p class="eyebrow">SUA CONTA</p><h1>Meu Perfil</h1><p>Gerencie seus dados e preferências.</p></div></header><div class="stat-card profile-card"><div class="profile-avatar"><lucide-icon [img]="UserIcon" size="40"></lucide-icon></div><div><h2>{{ userProfile().name }}</h2><p>{{ userProfile().email }}</p><small>Investidor ativo desde {{ userProfile().memberSince }}</small></div></div>
+    }
+
+    @if (activeTab() === 'empresas') {
+      <header class="page-heading"><div><p class="eyebrow">PARCERIAS ESTRATÉGICAS</p><h1>Empresas de reflorestamento</h1><p>Conecte sua operação com fornecedores e parceiros verificados para recuperação ambiental.</p></div></header>
+      <section class="stats-grid company-stats">
+        <article class="stat-card metric-card"><span class="stat-title">Parceiros verificáveis</span><strong class="stat-value">{{ companies.length }}</strong><small>Empresas com atuação real e rastreabilidade.</small></article>
+        <article class="stat-card metric-card"><span class="stat-title">Serviços disponíveis</span><strong class="stat-value">4+</strong><small>Planejamento, plantio, monitoramento e certificação.</small></article>
+      </section>
+      <section class="company-grid">
+        @for (company of companies; track company.name) {
+          <article class="company-card stat-card">
+            <div class="company-card-header">
+              <div>
+                <span class="company-badge">{{ company.category }}</span>
+                <h2>{{ company.name }}</h2>
+              </div>
+              <span class="verified-pill" [class.verified]="company.verified">{{ company.verified ? 'Verificada' : 'Em análise' }}</span>
+            </div>
+            <p class="company-region">{{ company.region }}</p>
+            <p class="company-service">{{ company.service }}</p>
+            <div class="company-impact">
+              <strong>Impacto</strong>
+              <p>{{ company.impact }}</p>
+            </div>
+            <div class="company-actions">
+              <a class="btn-secondary company-link" [href]="company.website" target="_blank" rel="noopener">Visitar site</a>
+              <button class="btn-primary" type="button">Filiar-se</button>
+            </div>
+          </article>
+        }
+      </section>
     }
 
     @if (activeTab() === 'aprenda') {
@@ -237,13 +309,16 @@
   </main>
 
   <footer class="app-footer">
-    <div class="footer-brand"><img class="brand-logo footer-logo" src="/logo.png" alt="BioCapital"><span>Capital que regenera.</span></div>
-    <div class="footer-links">
-      <button (click)="switchTab('marketplace')">Projetos ambientais</button>
-      @if (!isLoggedIn()) {
-        <button (click)="openLoginModal()">Acessar conta</button>
-      }
+        <div class="footer-brand"><img class="brand-logo footer-logo" src="/logo.png" alt="BioCapital"><span>Capital que regenera.</span></div>
+        <div class="footer-links">
+          <button (click)="switchTab('marketplace')">Projetos ambientais</button>
+          <button (click)="switchTab('empresas')">Parcerias</button>
+          @if (!isLoggedIn()) {
+            <button (click)="openLoginModal()">Acessar conta</button>
+          }
+        </div>
+        <div class="footer-meta"><span>Decisões melhores. Impacto real.</span><small>© 2026 BioCapital</small></div>
+      </footer>
     </div>
-    <div class="footer-meta"><span>Decisões melhores. Impacto real.</span><small>© 2026 BioCapital</small></div>
-  </footer>
+  </div>
 </div>

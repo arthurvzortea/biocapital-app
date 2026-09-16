@@ -31,6 +31,16 @@ type QuizQuestion = {
   explanation: string;
 };
 
+type CompanyProfile = {
+  name: string;
+  category: string;
+  region: string;
+  service: string;
+  impact: string;
+  website: string;
+  verified: boolean;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -39,7 +49,7 @@ type QuizQuestion = {
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit, OnDestroy {
-  private readonly initialBalance = 67.67;
+  private readonly initialBalance = 67000;
   Math = Math;
   TreePineIcon = TreePine; BotIcon = Bot; ShieldCheckIcon = ShieldCheck; ZapIcon = Zap;
   SunIcon = Sun; MoonIcon = Moon; XIcon = X; LogOutIcon = LogOut;
@@ -60,7 +70,8 @@ export class AppComponent implements OnInit, OnDestroy {
     else if (this.showLoginModal()) this.showLoginModal.set(false);
   };
 
-  activeTab = signal<'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda'>('dashboard');
+  activeTab = signal<'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas'>('dashboard');
+  sidebarOpen = signal(true);
   showOnboarding = signal(true);
   showLoginModal = signal(false);
   authMode = signal<'login' | 'register'>('login');
@@ -123,6 +134,72 @@ export class AppComponent implements OnInit, OnDestroy {
       source: 'shopify.com/sustainability',
     },
   ];
+
+  companies: CompanyProfile[] = [
+    {
+      name: 're.green',
+      category: 'Reflorestamento em escala',
+      region: 'Brasil e América Latina',
+      service: 'Planejamento, plantio e monitoramento de áreas de restauração.',
+      impact: 'Mais de 160 mil hectares restaurados com rastreio e monitoramento digital de carbono.',
+      website: 'https://re.green',
+      verified: true,
+    },
+    {
+      name: 'Mombak',
+      category: 'Carbon + natureza',
+      region: 'Brasil',
+      service: 'Consolidação de projetos de remoção de carbono e recuperação florestal.',
+      impact: 'Integra remoção de carbono com geração de valor e relatórios de impacto confiáveis.',
+      website: 'https://mombak.com',
+      verified: true,
+    },
+    {
+      name: 'Land Life Company',
+      category: 'Restauro ecológico',
+      region: 'Europa e América Latina',
+      service: 'Restauração ecológica com gestão de biodiversidade e ecossistemas.',
+      impact: 'Projetos com monitoramento geoespacial e foco em recuperação climática e ecológica.',
+      website: 'https://landlifecompany.com',
+      verified: true,
+    },
+    {
+      name: 'Eden Reforestation Projects',
+      category: 'Reflorestamento comunitário',
+      region: 'Ásia, África e América Latina',
+      service: 'Reflorestamento com gestão local e forte impacto social e ambiental.',
+      impact: 'Apoia comunidades e restauração de florestas tropicais em larga escala.',
+      website: 'https://edenprojects.org',
+      verified: true,
+    },
+  ];
+
+  sidebarGroups = [
+    {
+      title: 'Visão geral',
+      items: [
+        { label: 'Dashboard', value: 'dashboard', caption: 'Resumo' },
+        { label: 'Empresas', value: 'empresas', caption: 'Parceiros' },
+      ],
+    },
+    {
+      title: 'Investimento',
+      items: [
+        { label: 'Marketplace', value: 'marketplace', caption: 'Projetos' },
+        { label: 'Minha carteira', value: 'carteira', caption: 'Acompanhamento' },
+        { label: 'Créditos', value: 'creditos', caption: 'Mercado' },
+      ],
+    },
+    {
+      title: 'Conta',
+      items: [
+        { label: 'Certificados', value: 'certificados', caption: 'Blockchain' },
+        { label: 'Perfil', value: 'perfil', caption: 'Conta' },
+        { label: 'Aprenda', value: 'aprenda', caption: 'Guias' },
+      ],
+    },
+  ] as const;
+
   quizQuestions: QuizQuestion[] = [
     {
       question: 'O que representa 1 crédito de carbono?',
@@ -356,8 +433,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.showToast(this.reducedMotion() ? 'Redução de movimento ativada.' : 'Redução de movimento desativada.', 'success');
   }
 
-  switchTab(tab: 'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda') {
-    if (!['dashboard', 'marketplace'].includes(tab) && !this.isLoggedIn()) {
+  toggleSidebar() {
+    this.sidebarOpen.set(!this.sidebarOpen());
+  }
+
+  switchTab(tab: 'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas') {
+    if (!['dashboard', 'marketplace', 'empresas', 'aprenda', 'creditos'].includes(tab) && !this.isLoggedIn()) {
       this.openLoginModal();
       this.showToast('Faça login para acessar sua conta.', 'error');
       return;
@@ -655,5 +736,4 @@ export class AppComponent implements OnInit, OnDestroy {
     const id = ++this.toastId; this.toasts.update(t => [...t, { id, message, type }]);
     setTimeout(() => this.toasts.update(t => t.filter(toast => toast.id !== id)), 4000);
   }
-
 }
