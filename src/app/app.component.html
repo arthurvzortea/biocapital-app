@@ -143,7 +143,6 @@
         </ul>
         <div class="nav-actions">
           <div class="live-balance-pill"><span class="balance-label">Saldo disponível</span><span class="balance-value">{{ balance() | currency:'BRL' }}</span></div>
-          <div class="simulated-patrimony-pill"><span>Patrimônio simulado · {{ simulationDays() }} dias</span><strong>{{ simulatedPatrimony() | currency:'BRL' }}</strong></div>
           <button class="btn-secondary icon-button" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'" title="Alternar tema"><lucide-icon [img]="isDarkMode ? SunIcon : MoonIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="highContrast()" (click)="toggleHighContrast()" [attr.aria-pressed]="highContrast()" [attr.aria-label]="highContrast() ? 'Desativar alto contraste' : 'Ativar alto contraste'" title="Alto contraste"><lucide-icon [img]="AccessibilityIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="largeText()" (click)="toggleLargeText()" [attr.aria-pressed]="largeText()" [attr.aria-label]="largeText() ? 'Desativar texto ampliado' : 'Ampliar texto'" title="Tamanho do texto"><lucide-icon [img]="TextCursorInputIcon" size="18"></lucide-icon></button>
@@ -235,9 +234,11 @@
       <header class="page-heading financial-heading"><div><p class="eyebrow">MERCADO FINANCEIRO</p><h1>Invista com contexto</h1><p>Compare três caminhos de investimento e acompanhe uma simulação visual de crescimento.</p></div><span class="live-status"><i></i>Atualizado {{ marketLastUpdate() | date:'HH:mm:ss' }}</span></header>
 
       <section class="financial-simulation stat-card" aria-labelledby="simulation-title">
-        <div class="panel-heading"><div><p class="eyebrow">PROJEÇÃO EDUCATIVA</p><h2 id="simulation-title">Quanto seu patrimônio pode evoluir?</h2><p>Uma referência simulada com aporte inicial de R$ 10.000 e contribuições mensais de R$ 750.</p></div><div class="simulation-result"><strong>{{ simulatedPatrimony() | currency:'BRL' }}</strong><span>patrimônio estimado</span><b>+{{ simulatedGain() | currency:'BRL' }}</b></div></div>
-        <label class="simulation-control" for="simulationDays"><span><strong>Dias investidos</strong><small>Arraste para testar outro horizonte</small></span><output>{{ simulationDays() }} dias</output><input id="simulationDays" type="range" min="30" max="1825" step="30" [value]="simulationDays()" (input)="simulationDays.set(+$any($event.target).value)"></label>
+        <div class="simulation-intro"><div><p class="eyebrow">PROJEÇÃO EDUCATIVA</p><h2 id="simulation-title">Veja o tempo trabalhar a seu favor</h2><p>Uma referência ilustrativa para entender como constância e prazo podem influenciar seu patrimônio.</p></div><div class="simulated-patrimony-pill"><span>Patrimônio simulado · {{ simulationDays() }} dias</span><strong>{{ simulatedPatrimony() | currency:'BRL' }}</strong></div></div>
+        <div class="simulation-assumptions"><span><small>Aporte inicial</small><strong>R$ 10.000</strong></span><span><small>Aporte mensal</small><strong>R$ 750</strong></span><span><small>Ganho estimado</small><strong>+{{ simulatedGain() | currency:'BRL' }}</strong></span></div>
+        <label class="simulation-control" for="simulationDays"><span><strong>Escolha o período investido</strong><small>Arraste para simular outro horizonte</small></span><output>{{ simulationDays() }} dias</output><input id="simulationDays" type="range" min="30" max="1825" step="30" [value]="simulationDays()" (input)="simulationDays.set(+$any($event.target).value)"></label>
         <div class="simulation-axis"><span>30 dias</span><span>1 ano</span><span>3 anos</span><span>5 anos</span></div>
+        <p class="simulation-note">Estimativa baseada em uma taxa anual moderada de 10,6%, com reinvestimento dos aportes. Não representa promessa de rentabilidade.</p>
       </section>
 
       <section class="financial-grid" aria-label="Tipos de investimento">
