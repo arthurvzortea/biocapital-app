@@ -135,7 +135,6 @@
         <button class="mobile-menu-btn" type="button" (click)="toggleSidebar()" aria-label="Abrir menu">
           <lucide-icon [img]="BotIcon" size="20"></lucide-icon>
         </button>
-        <div class="brand-container mobile-nav-brand"><img class="brand-logo nav-logo" src="/logo.png" alt="BioCapital"></div>
         <ul class="nav-links">
           <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
           <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
