@@ -137,11 +137,13 @@
         </button>
         <ul class="nav-links">
           <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
+          <li><button class="nav-link" [class.active]="activeTab() === 'mercado-financeiro'" (click)="switchTab('mercado-financeiro')">Mercado Financeiro</button></li>
           <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
           <li><button class="nav-link" [class.active]="activeTab() === 'aprenda'" (click)="switchTab('aprenda')">Aprenda</button></li>
         </ul>
         <div class="nav-actions">
           <div class="live-balance-pill"><span class="balance-label">Saldo disponível</span><span class="balance-value">{{ balance() | currency:'BRL' }}</span></div>
+          <div class="simulated-patrimony-pill"><span>Patrimônio simulado · {{ simulationDays() }} dias</span><strong>{{ simulatedPatrimony() | currency:'BRL' }}</strong></div>
           <button class="btn-secondary icon-button" (click)="toggleTheme()" [attr.aria-label]="isDarkMode ? 'Ativar modo claro' : 'Ativar modo escuro'" title="Alternar tema"><lucide-icon [img]="isDarkMode ? SunIcon : MoonIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="highContrast()" (click)="toggleHighContrast()" [attr.aria-pressed]="highContrast()" [attr.aria-label]="highContrast() ? 'Desativar alto contraste' : 'Ativar alto contraste'" title="Alto contraste"><lucide-icon [img]="AccessibilityIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="largeText()" (click)="toggleLargeText()" [attr.aria-pressed]="largeText()" [attr.aria-label]="largeText() ? 'Desativar texto ampliado' : 'Ampliar texto'" title="Tamanho do texto"><lucide-icon [img]="TextCursorInputIcon" size="18"></lucide-icon></button>
@@ -227,6 +229,33 @@
       <header class="page-heading"><div><p class="eyebrow">INVESTIMENTO AMBIENTAL</p><h1>Marketplace de Projetos</h1><p>Escolha onde o seu dinheiro será plantado.</p></div></header>
       <div class="market-tools"><input class="search-field" type="search" placeholder="Buscar projetos..." [value]="marketSearch()" (input)="marketSearch.set($any($event.target).value)"><div class="filter-list"><button [class.active]="marketRegion() === 'Todos'" (click)="setMarketRegion('Todos')">Todos</button><button [class.active]="marketRegion() === 'Amazônia'" (click)="setMarketRegion('Amazônia')">Amazônia</button><button [class.active]="marketRegion() === 'Cerrado'" (click)="setMarketRegion('Cerrado')">Cerrado</button><button [class.active]="marketRegion() === 'Mata Atlântica'" (click)="setMarketRegion('Mata Atlântica')">Mata Atlântica</button></div></div>
       <div class="project-grid">@for (project of filteredProjects(); track project.name) {<article class="project-card project-showcase"><div class="project-visual"><img [src]="project.image" [alt]="project.name"><span class="project-region">{{ project.region }}</span></div><div class="project-copy"><h2>{{ project.name }}</h2><p>{{ project.description }}</p><small>Parceiro: {{ project.partner }}</small><div class="project-metrics"><span><b>{{ project.returnRate }}%</b><small>Retorno anual</small></span><span><b>{{ project.treeGoal | number }}</b><small>Árvores meta</small></span><span><b>7 anos</b><small>Maturação</small></span></div><div class="project-progress"><span>Investimento mínimo: {{ project.minimum | currency:'BRL' }}</span><button class="btn-primary" (click)="openInvestModal(project.name, project.partner)">Aportar capital</button></div></div></article>} @empty {<div class="empty-state stat-card"><h2>Nenhum projeto encontrado</h2><p>Tente outra busca ou região.</p></div>}</div>
+    }
+
+    @if (activeTab() === 'mercado-financeiro') {
+      <header class="page-heading financial-heading"><div><p class="eyebrow">MERCADO FINANCEIRO</p><h1>Invista com contexto</h1><p>Compare três caminhos de investimento e acompanhe uma simulação visual de crescimento.</p></div><span class="live-status"><i></i>Atualizado {{ marketLastUpdate() | date:'HH:mm:ss' }}</span></header>
+
+      <section class="financial-simulation stat-card" aria-labelledby="simulation-title">
+        <div class="panel-heading"><div><p class="eyebrow">PROJEÇÃO EDUCATIVA</p><h2 id="simulation-title">Quanto seu patrimônio pode evoluir?</h2><p>Uma referência simulada com aporte inicial de R$ 10.000 e contribuições mensais de R$ 750.</p></div><div class="simulation-result"><strong>{{ simulatedPatrimony() | currency:'BRL' }}</strong><span>patrimônio estimado</span><b>+{{ simulatedGain() | currency:'BRL' }}</b></div></div>
+        <label class="simulation-control" for="simulationDays"><span><strong>Dias investidos</strong><small>Arraste para testar outro horizonte</small></span><output>{{ simulationDays() }} dias</output><input id="simulationDays" type="range" min="30" max="1825" step="30" [value]="simulationDays()" (input)="simulationDays.set(+$any($event.target).value)"></label>
+        <div class="simulation-axis"><span>30 dias</span><span>1 ano</span><span>3 anos</span><span>5 anos</span></div>
+      </section>
+
+      <section class="financial-grid" aria-label="Tipos de investimento">
+        @for (asset of financialAssets; track asset.name) {
+          <article class="financial-card stat-card" [class]="'asset-' + asset.color">
+            <div class="financial-card-heading"><div><span class="asset-kicker">{{ asset.category }}</span><h2>{{ asset.name }}</h2></div><span class="risk-pill">Risco {{ asset.risk }}</span></div>
+            <p>{{ asset.description }}</p>
+            <div class="financial-chart" [attr.aria-label]="'Simulação de crescimento de ' + asset.name">
+              @for (candle of asset.candles; track $index) {
+                <div class="candle-column"><span class="candle-wick" [class.candle-up]="candle.close >= candle.open" [style.height.%]="Math.min((candle.high - candle.low) * 5, 88)" [style.bottom.%]="12 + ((candle.low - 90) % 48)"></span><span class="candle-body" [class.candle-up]="candle.close >= candle.open" [style.height.%]="Math.max(Math.abs(candle.close - candle.open) * 7, 8)" [style.bottom.%]="15 + ((Math.min(candle.open, candle.close) - 90) % 48)"></span></div>
+              }
+            </div>
+            <div class="financial-metrics"><span><small>Retorno estimado</small><strong>{{ asset.returnRange }}</strong></span><span><small>Horizonte</small><strong>3 a 5 anos</strong></span></div>
+            <button class="btn-secondary financial-action" (click)="showToast('Simulação de ' + asset.shortName + ' atualizada.', 'success')">Explorar simulação</button>
+          </article>
+        }
+      </section>
+      <p class="financial-disclaimer">Simulações ilustrativas, sem promessa de rentabilidade. O valor dos investimentos pode subir ou cair; avalie prazo, liquidez e risco antes de investir.</p>
     }
 
     @if (activeTab() === 'carteira') {

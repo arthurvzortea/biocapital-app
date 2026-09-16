@@ -67,6 +67,24 @@ type PortfolioChartPoint = {
   label: string;
 };
 
+type FinancialAsset = {
+  name: string;
+  shortName: string;
+  category: string;
+  description: string;
+  risk: string;
+  returnRange: string;
+  color: 'green' | 'yellow' | 'blue';
+  candles: FinancialCandle[];
+};
+
+type FinancialCandle = {
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -105,7 +123,7 @@ export class AppComponent implements OnInit, OnDestroy {
     else if (this.showLoginModal()) this.showLoginModal.set(false);
   };
 
-  activeTab = signal<'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas'>('dashboard');
+  activeTab = signal<'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas' | 'mercado-financeiro'>('dashboard');
   sidebarOpen = signal(true);
   showOnboarding = signal(true);
   showLoginModal = signal(false);
@@ -141,10 +159,54 @@ export class AppComponent implements OnInit, OnDestroy {
   calcInput = signal<number | string>('');
   marketSearch = signal('');
   marketRegion = signal<'Todos' | MarketProject['region']>('Todos');
+  simulationDays = signal(365);
+  marketLastUpdate = signal(new Date());
   selectedQuizAnswer = signal<number | null>(null);
   quizSubmitted = signal(false);
   quizScore = signal(0);
   currentQuizIndex = signal(0);
+  simulatedPatrimony = computed(() => {
+    const days = Math.max(this.simulationDays(), 1);
+    const years = days / 365;
+    const annualRate = 0.106;
+    const initialInvestment = 10000;
+    const monthlyContribution = 750;
+    const contributions = monthlyContribution * (days / 30.4375);
+    return (initialInvestment * Math.pow(1 + annualRate, years)) + contributions * (1 + annualRate * years * 0.52);
+  });
+  simulatedGain = computed(() => this.simulatedPatrimony() - 10000 - (750 * (this.simulationDays() / 30.4375)));
+  financialAssets: FinancialAsset[] = [
+    {
+      name: 'Ações empresariais',
+      shortName: 'Ações',
+      category: 'Renda variável',
+      description: 'Participação em empresas listadas. Potencial de crescimento maior, com oscilações e risco de mercado.',
+      risk: 'Alto',
+      returnRange: '8% a 18% a.a.',
+      color: 'green',
+      candles: this.createFinancialCandles(118, 1.08)
+    },
+    {
+      name: 'Fundo de investimento imobiliário',
+      shortName: 'FIIs',
+      category: 'Renda variável',
+      description: 'Exposição a imóveis e recebíveis com distribuição periódica de rendimentos, sem comprar um imóvel inteiro.',
+      risk: 'Médio',
+      returnRange: '7% a 13% a.a.',
+      color: 'yellow',
+      candles: this.createFinancialCandles(104, 1.045)
+    },
+    {
+      name: 'Tesouro Direto',
+      shortName: 'Títulos públicos',
+      category: 'Renda fixa',
+      description: 'Empréstimo ao governo por meio de títulos públicos. Mais previsibilidade, com risco de mercado conforme o prazo.',
+      risk: 'Baixo a médio',
+      returnRange: '9% a 12% a.a.',
+      color: 'blue',
+      candles: this.createFinancialCandles(96, 1.025)
+    }
+  ];
   carbonBuyers: CarbonBuyer[] = [
     {
       name: 'Microsoft',
@@ -228,6 +290,7 @@ export class AppComponent implements OnInit, OnDestroy {
       items: [
         { label: 'Marketplace', value: 'marketplace', caption: 'Projetos', icon: TrendingUp },
         { label: 'Minha carteira', value: 'carteira', caption: 'Acompanhamento', icon: FileCheck },
+        { label: 'Mercado Financeiro', value: 'mercado-financeiro', caption: 'Investimentos', icon: TrendingUp },
         { label: 'Créditos', value: 'creditos', caption: 'Mercado', icon: Zap },
       ],
     },
@@ -511,12 +574,47 @@ export class AppComponent implements OnInit, OnDestroy {
   calcTrees = computed(() => Math.floor((Number(this.calcInput()) || 0) / 20));
   calcKm = computed(() => Math.floor((Number(this.calcInput()) || 0) * 1.5));
   calcRF = computed(() => (Number(this.calcInput()) || 0) * 1.12);
+  private marketUpdateTimer?: ReturnType<typeof setInterval>;
+
+  private createFinancialCandles(start: number, growth: number): FinancialCandle[] {
+    return Array.from({ length: 12 }, (_, index) => {
+      const trend = start * Math.pow(growth, index / 11);
+      const variation = Math.sin(index * 1.7) * 2.4;
+      const open = trend + variation;
+      const close = trend + Math.cos(index * 1.3) * 2.1;
+      return {
+        open,
+        close,
+        high: Math.max(open, close) + 3 + (index % 3),
+        low: Math.min(open, close) - 2 - (index % 2)
+      };
+    });
+  }
+
+  private nextFinancialCandle(previous: FinancialCandle): FinancialCandle {
+    const open = previous.close;
+    const close = open * (1 + (Math.random() - 0.44) * 0.018);
+    return {
+      open,
+      close,
+      high: Math.max(open, close) * (1 + Math.random() * 0.012),
+      low: Math.min(open, close) * (1 - Math.random() * 0.01)
+    };
+  }
+
   ngOnInit() {
     this.sidebarOpen.set(window.innerWidth > 900);
     this.isDarkMode = true;
     document.documentElement.classList.add('theme-dark');
     this.applyAccessibilitySettings();
     document.addEventListener('keydown', this.keydownHandler);
+    this.marketUpdateTimer = setInterval(() => {
+      this.financialAssets = this.financialAssets.map(asset => ({
+        ...asset,
+        candles: [...asset.candles.slice(1), this.nextFinancialCandle(asset.candles[asset.candles.length - 1])]
+      }));
+      this.marketLastUpdate.set(new Date());
+    }, 4000);
 
     this.authUnsubscribe = onAuthStateChanged(auth, user => {
       this.clearUserListeners();
@@ -540,6 +638,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     document.removeEventListener('keydown', this.keydownHandler);
+    if (this.marketUpdateTimer) clearInterval(this.marketUpdateTimer);
     this.authUnsubscribe?.();
     this.clearUserListeners();
   }
@@ -580,8 +679,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.sidebarOpen.set(!this.sidebarOpen());
   }
 
-  switchTab(tab: 'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas') {
-    if (!['dashboard', 'marketplace', 'empresas', 'aprenda', 'creditos'].includes(tab) && !this.isLoggedIn()) {
+  switchTab(tab: 'dashboard' | 'marketplace' | 'carteira' | 'creditos' | 'certificados' | 'perfil' | 'aprenda' | 'empresas' | 'mercado-financeiro') {
+    if (!['dashboard', 'marketplace', 'empresas', 'aprenda', 'creditos', 'mercado-financeiro'].includes(tab) && !this.isLoggedIn()) {
       this.openLoginModal();
       this.showToast('Faça login para acessar sua conta.', 'error');
       return;
