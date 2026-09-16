@@ -512,6 +512,7 @@ export class AppComponent implements OnInit, OnDestroy {
   calcKm = computed(() => Math.floor((Number(this.calcInput()) || 0) * 1.5));
   calcRF = computed(() => (Number(this.calcInput()) || 0) * 1.12);
   ngOnInit() {
+    this.sidebarOpen.set(window.innerWidth > 900);
     this.isDarkMode = true;
     document.documentElement.classList.add('theme-dark');
     this.applyAccessibilitySettings();
@@ -586,6 +587,10 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.activeTab.set(tab);
+
+    if (window.innerWidth <= 900) {
+      this.sidebarOpen.set(false);
+    }
   }
 
   toggleTheme() {

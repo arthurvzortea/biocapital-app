@@ -2881,9 +2881,56 @@ button:disabled {
    OTIMIZAÇÃO RESPONSIVA AVANÇADA (MOBILE-FIRST)
 ========================================= */
 
-/* Fix para telas até 900px (Tablets e Celulares Grandes) */
+.mobile-menu-btn,
+.sidebar-backdrop,
+.mobile-nav-brand {
+  display: none;
+}
+
 @media (max-width: 900px) {
-  /* Sidebar em modo Drawer/Gaveta no mobile */
+  /* Botão Hambúrguer na Topbar Mobile */
+  .mobile-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: var(--border-width) solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-color);
+    color: var(--text-main);
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--border-color);
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-brand {
+    display: flex;
+    min-width: 0;
+  }
+
+  .mobile-nav-brand .nav-logo {
+    width: clamp(82px, 22vw, 120px);
+    padding: 4px 6px;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1040;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .sidebar {
     position: fixed;
     top: 0;
@@ -2891,30 +2938,51 @@ button:disabled {
     z-index: 1050;
     width: 280px !important;
     height: 100vh;
-    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.3);
-    transform: translateX(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Esconde a barra lateral ao fechar */
-  .sidebar.collapsed {
     transform: translateX(-100%);
-    width: 280px !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
   }
 
-  /* Mantém o botão de reabrir flutuando no canto superior da tela quando fechado */
-  .sidebar.collapsed .sidebar-toggle {
-    position: absolute;
-    right: -52px;
-    top: 14px;
-    background: var(--surface-color);
-    border: var(--border-width) solid var(--border-color);
-    box-shadow: 3px 3px 0 var(--border-color);
+  .sidebar.open {
+    transform: translateX(0);
   }
 
-  /* Ajuste do layout principal para não colapsar */
-  .main-shell {
-    width: 100%;
+  .top-nav {
+    padding: 10px 14px !important;
+    gap: 8px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .top-nav .nav-links {
+    display: none;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .nav-actions .icon-button {
+    min-width: 34px;
+    height: 34px;
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .live-balance-pill {
+    min-width: auto !important;
+    padding: 4px 8px !important;
+  }
+
+  .balance-label {
+    display: none;
+  }
+
+  .balance-value {
+    font-size: 0.85rem !important;
   }
 }
 
@@ -2986,6 +3054,11 @@ button:disabled {
     width: 100%;
     padding: 10px 14px !important;
     font-size: 0.88rem !important;
+  }
+
+  .nav-actions .btn-primary,
+  .nav-actions .btn-secondary {
+    width: auto;
   }
 
   .quiz-option {
