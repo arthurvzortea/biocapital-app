@@ -2883,6 +2883,7 @@ button:disabled {
 
 /* Fix para telas até 900px (Tablets e Celulares Grandes) */
 @media (max-width: 900px) {
+  /* Sidebar em modo Drawer/Gaveta no mobile */
   .sidebar {
     position: fixed;
     top: 0;
@@ -2895,26 +2896,25 @@ button:disabled {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Esconde a barra lateral ao fechar */
   .sidebar.collapsed {
     transform: translateX(-100%);
     width: 280px !important;
   }
 
-  .dashboard-split,
-  .monitor-grid,
-  .credit-command-grid,
-  .consultor-grid,
-  .buyer-grid,
-  .company-grid {
-    grid-template-columns: 1fr !important;
-    gap: 16px;
+  /* Mantém o botão de reabrir flutuando no canto superior da tela quando fechado */
+  .sidebar.collapsed .sidebar-toggle {
+    position: absolute;
+    right: -52px;
+    top: 14px;
+    background: var(--surface-color);
+    border: var(--border-width) solid var(--border-color);
+    box-shadow: 3px 3px 0 var(--border-color);
   }
 
-  .carbon-growth-panel {
-    padding-left: 0 !important;
-    border-left: none !important;
-    border-top: var(--border-width) solid var(--border-color);
-    padding-top: 20px;
+  /* Ajuste do layout principal para não colapsar */
+  .main-shell {
+    width: 100%;
   }
 }
 
