@@ -41,6 +41,32 @@ type CompanyProfile = {
   verified: boolean;
 };
 
+type ReforestationPoint = {
+  project: string;
+  region: MarketProject['region'];
+  state: string;
+  x: number;
+  y: number;
+  plantedTrees: number;
+  targetTrees: number;
+  carbonCredits: number;
+  lastUpdate: string;
+};
+
+type CertificateRecord = {
+  hash: string;
+  project: string;
+  amount: number;
+  date: string;
+  createdAt?: string;
+};
+
+type PortfolioChartPoint = {
+  value: number;
+  isUp: boolean;
+  label: string;
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -60,6 +86,15 @@ export class AppComponent implements OnInit, OnDestroy {
   highContrast = signal(false);
   largeText = signal(false);
   reducedMotion = signal(false);
+  accessibilityAnnouncement = computed(() => {
+    const enabled = [
+      this.highContrast() ? 'alto contraste' : '',
+      this.largeText() ? 'texto ampliado' : '',
+      this.reducedMotion() ? 'redução de movimento' : ''
+    ].filter(Boolean);
+
+    return enabled.length ? `Ativo: ${enabled.join(', ')}.` : 'Preferências de acessibilidade desativadas.';
+  });
   private lastFocusedElement: HTMLElement | null = null;
   private readonly keydownHandler = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return;
@@ -79,6 +114,11 @@ export class AppComponent implements OnInit, OnDestroy {
   authName = signal('');
   showInvestModal = signal(false);
   showSellModal = signal(false);
+  saleLoading = signal(false);
+  saleStep = signal<1 | 2>(1);
+  sellBuyer = signal('Natura Cosméticos');
+  sellQuantity = signal<number | string>('');
+  sellPrice = signal(128);
   showBlockchainModal = signal(false);
 
   isLoggedIn = signal(false);
@@ -87,12 +127,13 @@ export class AppComponent implements OnInit, OnDestroy {
   investedTotal = signal(0);
   treesPlanted = signal(0);
   carbonCredits = signal(0);
-  marketTrend = signal<'up' | 'down' | 'stable'>('stable');
-  liveChartData = signal<{value: number, isUp: boolean}[]>(this.createStableChart());
+  sellEstimatedValue = computed(() => Number(this.sellQuantity()) * this.sellPrice());
+  sellRemainingCredits = computed(() => Math.max(this.carbonCredits() - (Number(this.sellQuantity()) || 0), 0));
   selectedProject = signal('');
   selectedOng = signal('');
   blockchainData = signal('');
-  certificates = signal<{hash: string, project: string, amount: number, date: string}[]>([]);
+  certificates = signal<CertificateRecord[]>([]);
+  liveChartData = computed(() => this.createPortfolioChart());
   toasts = signal<{id: number, message: string, type: 'success'|'error'}[]>([]);
   private toastId = 0;
   private authUnsubscribe?: Unsubscribe;
@@ -178,24 +219,24 @@ export class AppComponent implements OnInit, OnDestroy {
     {
       title: 'Visão geral',
       items: [
-        { label: 'Dashboard', value: 'dashboard', caption: 'Resumo' },
-        { label: 'Empresas', value: 'empresas', caption: 'Parceiros' },
+        { label: 'Dashboard', value: 'dashboard', caption: 'Resumo', icon: TreePine },
+        { label: 'Empresas', value: 'empresas', caption: 'Parceiros', icon: User },
       ],
     },
     {
       title: 'Investimento',
       items: [
-        { label: 'Marketplace', value: 'marketplace', caption: 'Projetos' },
-        { label: 'Minha carteira', value: 'carteira', caption: 'Acompanhamento' },
-        { label: 'Créditos', value: 'creditos', caption: 'Mercado' },
+        { label: 'Marketplace', value: 'marketplace', caption: 'Projetos', icon: TrendingUp },
+        { label: 'Minha carteira', value: 'carteira', caption: 'Acompanhamento', icon: FileCheck },
+        { label: 'Créditos', value: 'creditos', caption: 'Mercado', icon: Zap },
       ],
     },
     {
       title: 'Conta',
       items: [
-        { label: 'Certificados', value: 'certificados', caption: 'Blockchain' },
-        { label: 'Perfil', value: 'perfil', caption: 'Conta' },
-        { label: 'Aprenda', value: 'aprenda', caption: 'Guias' },
+        { label: 'Certificados', value: 'certificados', caption: 'Blockchain', icon: ShieldCheck },
+        { label: 'Perfil', value: 'perfil', caption: 'Conta', icon: User },
+        { label: 'Aprenda', value: 'aprenda', caption: 'Guias', icon: Bot },
       ],
     },
   ] as const;
@@ -313,6 +354,53 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   ];
 
+  reforestationPoints: ReforestationPoint[] = [
+    {
+      project: 'Projeto Amazônia Viva',
+      region: 'Amazônia',
+      state: 'Amazonas',
+      x: 29,
+      y: 28,
+      plantedTrees: 28400,
+      targetTrees: 50000,
+      carbonCredits: 86.4,
+      lastUpdate: 'há 4 min'
+    },
+    {
+      project: 'Cerrado Renascente',
+      region: 'Cerrado',
+      state: 'Goiás',
+      x: 54,
+      y: 52,
+      plantedTrees: 17300,
+      targetTrees: 30000,
+      carbonCredits: 42.8,
+      lastUpdate: 'há 8 min'
+    },
+    {
+      project: 'Corredor Atlântico',
+      region: 'Mata Atlântica',
+      state: 'Minas Gerais',
+      x: 68,
+      y: 65,
+      plantedTrees: 12400,
+      targetTrees: 20000,
+      carbonCredits: 31.6,
+      lastUpdate: 'há 12 min'
+    },
+    {
+      project: 'Nascentes do Cerrado',
+      region: 'Cerrado',
+      state: 'Mato Grosso',
+      x: 43,
+      y: 57,
+      plantedTrees: 9720,
+      targetTrees: 18000,
+      carbonCredits: 21.7,
+      lastUpdate: 'há 16 min'
+    }
+  ];
+
   filteredProjects = computed(() => {
     const search = this.marketSearch().trim().toLocaleLowerCase();
     const region = this.marketRegion();
@@ -320,6 +408,52 @@ export class AppComponent implements OnInit, OnDestroy {
       const matchesSearch = !search || `${project.name} ${project.partner} ${project.description}`.toLocaleLowerCase().includes(search);
       return matchesSearch && (region === 'Todos' || project.region === region);
     });
+  });
+
+  liveReforestationPoints = computed(() => this.reforestationPoints.map(point => {
+    const investment = this.investimentosAgrupados().find(item => item.project === point.project);
+    const plantedTrees = point.plantedTrees + (investment?.arvoresTotal ?? 0);
+    const carbonCredits = point.carbonCredits + (investment?.co2Total ?? 0);
+
+    return {
+      ...point,
+      plantedTrees,
+      carbonCredits,
+      progress: Math.min((plantedTrees / point.targetTrees) * 100, 100)
+    };
+  }));
+
+  reforestationOverview = computed(() => {
+    const points = this.liveReforestationPoints();
+    const plantedTrees = points.reduce((total, point) => total + point.plantedTrees, 0);
+    const carbonCredits = points.reduce((total, point) => total + point.carbonCredits, 0);
+    const targetTrees = points.reduce((total, point) => total + point.targetTrees, 0);
+
+    return {
+      plantedTrees,
+      carbonCredits,
+      progress: Math.min((plantedTrees / targetTrees) * 100, 100),
+      activeProjects: points.length
+    };
+  });
+
+  carbonGrowthData = computed(() => {
+    const currentCredits = this.reforestationOverview().carbonCredits;
+    return [
+      { label: 'Abr', value: currentCredits * 0.58 },
+      { label: 'Mai', value: currentCredits * 0.67 },
+      { label: 'Jun', value: currentCredits * 0.75 },
+      { label: 'Jul', value: currentCredits * 0.84 },
+      { label: 'Ago', value: currentCredits * 0.92 },
+      { label: 'Set', value: currentCredits }
+    ];
+  });
+
+  carbonGrowthRate = computed(() => {
+    const history = this.carbonGrowthData();
+    const previous = history[history.length - 2]?.value ?? 0;
+    const current = history[history.length - 1]?.value ?? 0;
+    return previous ? ((current - previous) / previous) * 100 : 0;
   });
 
   portfolioYield = computed(() => {
@@ -410,9 +544,17 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private applyAccessibilitySettings() {
-    document.body.classList.toggle('a11y-high-contrast', this.highContrast());
-    document.body.classList.toggle('a11y-large-text', this.largeText());
-    document.body.classList.toggle('a11y-reduced-motion', this.reducedMotion());
+    const isHighContrast = this.highContrast();
+    const isLargeText = this.largeText();
+    const isReducedMotion = this.reducedMotion();
+
+    document.body.classList.toggle('a11y-high-contrast', isHighContrast);
+    document.body.classList.toggle('a11y-large-text', isLargeText);
+    document.body.classList.toggle('a11y-reduced-motion', isReducedMotion);
+
+    document.documentElement.classList.toggle('a11y-high-contrast', isHighContrast);
+    document.documentElement.classList.toggle('a11y-large-text', isLargeText);
+    document.documentElement.classList.toggle('a11y-reduced-motion', isReducedMotion);
   }
 
   toggleHighContrast() {
@@ -581,7 +723,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     const certificatesRef = collection(db, 'users', uid, 'certificates');
     this.userUnsubscribes.push(onSnapshot(certificatesRef, snapshot => {
-      this.certificates.set(snapshot.docs.map(item => item.data() as { hash: string, project: string, amount: number, date: string }));
+      this.certificates.set(snapshot.docs.map(item => item.data() as CertificateRecord));
     }, () => this.showToast('Não foi possível carregar seus certificados.', 'error')));
   }
 
@@ -614,21 +756,24 @@ export class AppComponent implements OnInit, OnDestroy {
     this.treesPlanted.set(0);
     this.carbonCredits.set(0);
     this.certificates.set([]);
-    this.marketTrend.set('stable');
-    this.liveChartData.set(this.createStableChart());
   }
 
-  private createStableChart() {
-    return Array.from({ length: 12 }, () => ({ value: 100, isUp: true }));
-  }
+  private createPortfolioChart() {
+    const certificates = [...this.certificates()]
+      .sort((left, right) => (left.createdAt ?? left.date).localeCompare(right.createdAt ?? right.date));
+    let invested = 0;
 
-  private registerTransaction(nextBalance: number, isUp: boolean) {
-    const chart = this.liveChartData().slice(1);
-    const simulatedChange = (Math.random() - 0.45) * 0.004;
-    const simulatedValue = Math.max(nextBalance * (1 + simulatedChange), 1);
-    chart.push({ value: simulatedValue, isUp: simulatedChange >= 0 });
-    this.liveChartData.set(chart);
-    this.marketTrend.set(isUp && simulatedChange >= 0 ? 'up' : 'down');
+    if (!certificates.length) {
+      return Array.from({ length: 6 }, () => ({ value: 0, isUp: true, label: '-' }));
+    }
+
+    const history: PortfolioChartPoint[] = certificates.map(certificate => {
+      const previousValue = invested;
+      invested += certificate.amount;
+      return { value: invested, isUp: invested >= previousValue, label: certificate.date.slice(0, 5) };
+    });
+
+    return history.slice(-12);
   }
 
   openInvestModal(project: string, ong: string) {
@@ -699,18 +844,45 @@ export class AppComponent implements OnInit, OnDestroy {
         hash,
         project: this.selectedProject(),
         amount,
-        date: new Date().toLocaleDateString('pt-BR')
+        date: new Date().toLocaleDateString('pt-BR'),
+        createdAt: new Date().toISOString()
       });
       this.closeModals();
-      this.registerTransaction(this.balance() - amount, false);
       this.showToast(`Aporte de R$ ${amount.toFixed(2)} processado!`, 'success');
       this.switchTab('carteira');
     }).catch(() => this.showToast('Não foi possível salvar o aporte.', 'error'));
   }
 
-  openSellCarbonModal() { this.showSellModal.set(true); }
+  openSellCarbonModal() {
+    this.saleStep.set(1);
+    this.sellBuyer.set('Natura Cosméticos');
+    this.sellQuantity.set('');
+    this.sellPrice.set(128);
+    this.showSellModal.set(true);
+  }
+
+  updateSellOffer(value: string) {
+    const [buyer, rawPrice] = value.split('|');
+    const price = Number(rawPrice);
+    this.sellBuyer.set(buyer || 'Empresa compradora');
+    this.sellPrice.set(Number.isFinite(price) ? price : 0);
+  }
+
+  reviewCarbonSale(quantity: string) {
+    const qty = this.sanitizeNonNegativeAmount(quantity, 0.01, 'Informe uma quantidade válida de créditos.');
+    if (qty === null || qty > this.carbonCredits()) {
+      if (qty !== null) this.showToast('A quantidade excede seu saldo disponível.', 'error');
+      return;
+    }
+    this.saleStep.set(2);
+  }
+
+  editCarbonSale() {
+    this.saleStep.set(1);
+  }
 
   processCarbonSale(qtyStr: string, priceStr: string) {
+    if (this.saleLoading()) { return; }
     const qty = this.sanitizeNonNegativeAmount(qtyStr, 0.01, 'Quantidade inválida ou saldo insuficiente.');
     const price = this.sanitizeNonNegativeAmount(priceStr, 0.01, 'Preço inválido para a venda.');
     if (qty === null || price === null) { return; }
@@ -718,13 +890,14 @@ export class AppComponent implements OnInit, OnDestroy {
     const uid = this.userProfile().uid;
     if (!uid) { this.openLoginModal(); return; }
 
+    this.saleLoading.set(true);
     void updateDoc(doc(db, 'users', uid), {
       carbonCredits: increment(-qty)
     }).then(() => {
       this.closeModals();
-      this.registerTransaction(this.balance(), false);
       this.showToast(`Venda de ${qty} tCO2 registrada.`, 'success');
-    }).catch(() => this.showToast('Não foi possível salvar a venda.', 'error'));
+    }).catch(() => this.showToast('Não foi possível salvar a venda.', 'error'))
+      .finally(() => this.saleLoading.set(false));
   }
 
   openBlockchainModal(hash: string) {

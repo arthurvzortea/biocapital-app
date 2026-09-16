@@ -1,17 +1,11 @@
 <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
-<div class="app-container">
+<div class="app-container" [class.a11y-high-contrast]="highContrast()" [class.a11y-large-text]="largeText()" [class.a11y-reduced-motion]="reducedMotion()">
   @if (showOnboarding()) {
   <div class="modal-overlay">
     <div class="modal-box onboarding-box">
       <button class="modal-close" (click)="closeOnboarding()" aria-label="Fechar">
         <lucide-icon [img]="XIcon" size="20"></lucide-icon>
       </button>
-
-      <div class="onboarding-badge">
-        <div class="onboarding-mark">
-          <img class="brand-logo onboarding-logo" src="/logo.png" alt="BioCapital">
-        </div>
-      </div>
 
       <h2 class="onboarding-title">Desperte Seu Capital</h2>
       <p class="onboarding-desc">
@@ -30,7 +24,7 @@
       </div>
 
       <button class="btn-primary full-width onboarding-btn" (click)="closeOnboarding()">
-        Start / Começar a explorar
+        Começar a explorar
       </button>
     </div>
   </div>
@@ -39,7 +33,7 @@
   @if (showLoginModal()) {
     <div class="modal-overlay"><div class="modal-box auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
       <button class="modal-close" (click)="showLoginModal.set(false)" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
-      <div class="auth-heading"><div class="auth-mark"><img class="brand-logo auth-logo" src="/logo.png" alt="BioCapital"></div><div><p class="eyebrow">CONTA BIOCAPITAL</p><h2 id="authTitle">{{ authMode() === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta' }}</h2></div></div>
+      <div class="auth-heading"><div><p class="eyebrow">CONTA BIOCAPITAL</p><h2 id="authTitle">{{ authMode() === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta' }}</h2></div></div>
       <p class="modal-copy">{{ authMode() === 'login' ? 'Acesse sua carteira e acompanhe seu impacto.' : 'Cadastre-se para começar a cuidar do seu dinheiro e do planeta.' }}</p>
       <form class="auth-form" (submit)="$event.preventDefault(); processEmailAuth(authName(), authEmail.value, authPassword.value)">
         @if (authMode() === 'register') {
@@ -70,15 +64,27 @@
   }
 
   @if (showSellModal()) {
-    <div class="modal-overlay"><div class="modal-box">
+    <div class="modal-overlay"><div class="modal-box sell-modal" role="dialog" aria-modal="true" aria-labelledby="sellTitle">
       <button class="modal-close" (click)="closeModals()" aria-label="Fechar"><lucide-icon [img]="XIcon" size="20"></lucide-icon></button>
-      <h2>Vender Créditos (B2B)</h2>
-      <p class="modal-copy">Saldo atual: <strong>{{ carbonCredits() | number:'1.2-2' }} tCO2</strong></p>
-      <label class="field-label" for="companySelect">Empresa Compradora</label>
-      <select id="companySelect" #companySelect class="neo-field"><option value="128.00">Natura Cosméticos</option><option value="125.50">Ambev S.A.</option><option value="126.00">Mercado Livre</option></select>
-      <label class="field-label" for="sellQty">Quantidade (tCO2)</label>
-      <input id="sellQty" #sellQty type="number" placeholder="Ex: 1.0" step="0.1" class="neo-field">
-      <button class="btn-primary full-width" (click)="processCarbonSale(sellQty.value, companySelect.value)">Confirmar Venda</button>
+      <p class="eyebrow">NOVA MOVIMENTAÇÃO</p>
+      <h2 id="sellTitle">Vender créditos de carbono</h2>
+      <div class="sale-stepper" aria-label="Etapa da venda"><span [class.active]="saleStep() === 1"><b>1</b>Dados</span><i></i><span [class.active]="saleStep() === 2"><b>2</b>Revisão</span></div>
+      @if (saleStep() === 1) {
+        <p class="modal-copy">Escolha o comprador e informe quanto deseja negociar.</p>
+        <div class="sale-balance-strip"><span>Saldo disponível</span><strong>{{ carbonCredits() | number:'1.2-2' }} tCO2</strong></div>
+        <label class="field-label" for="companySelect">Empresa compradora</label>
+        <select id="companySelect" #companySelect class="neo-field" [value]="sellBuyer() + '|' + sellPrice()" (change)="updateSellOffer($any($event.target).value)"><option value="Natura Cosméticos|128">Natura Cosméticos · R$ 128,00 / tCO2</option><option value="Ambev S.A.|125.5">Ambev S.A. · R$ 125,50 / tCO2</option><option value="Mercado Livre|126">Mercado Livre · R$ 126,00 / tCO2</option></select>
+        <label class="field-label" for="sellQty">Quantidade (tCO2)</label>
+        <input id="sellQty" #sellQty type="number" placeholder="Ex: 1,0" step="0.1" min="0.01" [max]="carbonCredits()" class="neo-field" [value]="sellQuantity()" (input)="sellQuantity.set($any($event.target).value)">
+        <div class="sale-preview" aria-live="polite"><div><span>Valor estimado</span><strong>{{ sellEstimatedValue() | currency:'BRL' }}</strong></div><div><span>Saldo após a venda</span><strong>{{ sellRemainingCredits() | number:'1.2-2' }} tCO2</strong></div></div>
+        <button class="btn-primary full-width sale-submit" (click)="reviewCarbonSale(sellQty.value)">Continuar para revisão</button>
+      } @else {
+        <p class="modal-copy">Confira os dados antes de confirmar a movimentação.</p>
+        <div class="sale-review-card"><div><span>Você está vendendo</span><strong>{{ sellQuantity() }} tCO2</strong></div><div><span>Para</span><strong>{{ sellBuyer() }}</strong></div><div><span>Cotação</span><strong>{{ sellPrice() | currency:'BRL' }} / tCO2</strong></div><div class="sale-review-total"><span>Valor estimado a receber</span><strong>{{ sellEstimatedValue() | currency:'BRL' }}</strong></div></div>
+        <div class="sale-review-balance"><span>Saldo após a venda</span><strong>{{ sellRemainingCredits() | number:'1.2-2' }} tCO2</strong></div>
+        <div class="sale-review-actions"><button class="btn-secondary" [disabled]="saleLoading()" (click)="editCarbonSale()">Editar</button><button class="btn-primary" [disabled]="saleLoading()" (click)="processCarbonSale(sellQuantity().toString(), sellPrice().toString())">{{ saleLoading() ? 'Processando...' : 'Confirmar venda' }}</button></div>
+      }
+      <small class="sale-note">A cotação é estimada e a negociação deve ser confirmada com a empresa compradora.</small>
     </div></div>
   }
 
@@ -96,23 +102,7 @@
     <aside class="sidebar" [class.collapsed]="!sidebarOpen()" aria-label="Navegação lateral">
       <div class="sidebar-header">
         <div class="brand-container sidebar-brand">
-          <div class="brand-mark" aria-label="BioCapital" role="img">
-            <svg viewBox="0 0 64 64" aria-hidden="true">
-              <defs>
-                <linearGradient id="brandGradient" x1="0%" x2="100%" y1="0%" y2="100%">
-                  <stop offset="0%" stop-color="#9ef6c8"/>
-                  <stop offset="100%" stop-color="#2dd4bf"/>
-                </linearGradient>
-              </defs>
-              <circle cx="32" cy="32" r="28" fill="rgba(12, 18, 25, 0.24)"/>
-              <path d="M19 39C22.5 27 31 20 45 17C41 29 34 35 19 39Z" fill="url(#brandGradient)"/>
-              <path d="M26 23C30 26.5 38.5 31 45 33" fill="none" stroke="#ecfdf5" stroke-width="3.2" stroke-linecap="round"/>
-              <path d="M35 18L45 18L45 28" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M25 39L41 23" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round"/>
-              <path d="M41 24L41 18L35 18" fill="none" stroke="#ecfdf5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          @if (sidebarOpen()) { <span class="brand-text">BioCapital</span> }
+          <img class="brand-logo sidebar-logo" src="/logo.png" alt="BioCapital">
         </div>
         <button class="sidebar-toggle" type="button" (click)="toggleSidebar()" [attr.aria-label]="sidebarOpen() ? 'Fechar navegação lateral' : 'Abrir navegação lateral'">
           <lucide-icon [img]="sidebarOpen() ? XIcon : BotIcon" size="18"></lucide-icon>
@@ -127,6 +117,7 @@
           <div class="sidebar-list">
             @for (item of group.items; track item.value) {
               <button class="sidebar-item" [class.active]="activeTab() === item.value" (click)="switchTab(item.value)">
+                <lucide-icon class="sidebar-item-icon" [img]="item.icon" size="18"></lucide-icon>
                 <span class="sidebar-item-label">{{ item.label }}</span>
                 @if (sidebarOpen()) {
                   <small>{{ item.caption }}</small>
@@ -140,7 +131,6 @@
 
     <div class="main-shell">
       <nav class="top-nav" aria-label="Navegação principal">
-        <div class="brand-container mobile-brand"><img class="brand-logo nav-logo" src="/logo.png" alt="BioCapital"></div>
         <ul class="nav-links">
           <li><button class="nav-link" [class.active]="activeTab() === 'marketplace'" (click)="switchTab('marketplace')">Marketplace</button></li>
           <li><button class="nav-link" [class.active]="activeTab() === 'creditos'" (click)="switchTab('creditos')">Créditos</button></li>
@@ -152,6 +142,7 @@
           <button class="btn-secondary icon-button" [class.accessibility-active]="highContrast()" (click)="toggleHighContrast()" [attr.aria-pressed]="highContrast()" [attr.aria-label]="highContrast() ? 'Desativar alto contraste' : 'Ativar alto contraste'" title="Alto contraste"><lucide-icon [img]="AccessibilityIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="largeText()" (click)="toggleLargeText()" [attr.aria-pressed]="largeText()" [attr.aria-label]="largeText() ? 'Desativar texto ampliado' : 'Ampliar texto'" title="Tamanho do texto"><lucide-icon [img]="TextCursorInputIcon" size="18"></lucide-icon></button>
           <button class="btn-secondary icon-button" [class.accessibility-active]="reducedMotion()" (click)="toggleReducedMotion()" [attr.aria-pressed]="reducedMotion()" [attr.aria-label]="reducedMotion() ? 'Desativar redução de movimento' : 'Ativar redução de movimento'" title="Reduzir movimento"><lucide-icon [img]="PauseCircleIcon" size="18"></lucide-icon></button>
+          <span class="sr-only" aria-live="polite">{{ accessibilityAnnouncement() }}</span>
           @if (!isLoggedIn()) { <button class="btn-primary" (click)="openLoginModal()">Login</button> } @else { <button class="btn-secondary icon-button logout-button" (click)="logout()" aria-label="Sair"><lucide-icon [img]="LogOutIcon" size="18"></lucide-icon></button> }
         </div>
       </nav>
@@ -167,8 +158,59 @@
         <article class="stat-card metric-card"><div class="metric-icon green"><lucide-icon [img]="TreePineIcon" size="22"></lucide-icon></div><span class="stat-title">Árvores financiadas</span><strong class="stat-value">{{ treesPlanted() | number }}</strong><small>Impacto acumulado</small></article>
       </section>
 
+      <section class="stat-card reforestation-monitor" aria-labelledby="reforestation-title">
+        <div class="panel-heading monitor-heading">
+          <div>
+            <p class="eyebrow">MONITORAMENTO AMBIENTAL</p>
+            <h2 id="reforestation-title">Reflorestamento em tempo real</h2>
+            <p>Veja onde os projetos estão avançando e como a geração de créditos está evoluindo.</p>
+          </div>
+          <span class="live-status"><i></i>Atualizado em tempo real</span>
+        </div>
+
+        <div class="monitor-grid">
+          <div class="reforestation-map-panel">
+            <div class="map-panel-heading"><span>Rede de projetos no Brasil</span><small>{{ reforestationOverview().activeProjects }} projetos ativos</small></div>
+            <div class="reforestation-map" role="img" aria-label="Mapa do Brasil com projetos de reflorestamento monitorados">
+              <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                <path class="map-outline" d="M21 18 35 10 49 13 59 21 73 25 82 37 78 50 84 59 75 70 65 72 57 84 44 79 35 85 27 75 17 70 15 57 8 48 14 37Z"></path>
+                <path class="map-river" d="M18 34C31 39 40 35 50 42S66 48 76 42M31 20C35 33 33 49 42 57S52 69 51 80"></path>
+                @for (point of liveReforestationPoints(); track point.project) {
+                  <g class="map-point" [class.map-point-active]="point.progress >= 60">
+                    <circle class="map-point-halo" [attr.cx]="point.x" [attr.cy]="point.y" r="5"></circle>
+                    <circle class="map-point-core" [attr.cx]="point.x" [attr.cy]="point.y" r="2.6"></circle>
+                  </g>
+                }
+              </svg>
+              <div class="map-legend"><span><i class="legend-green"></i>Em operação</span><span><i class="legend-yellow"></i>Em expansão</span></div>
+            </div>
+            <div class="map-project-list">
+              @for (point of liveReforestationPoints(); track point.project) {
+                <div class="map-project-row">
+                  <div><span class="project-status-dot" [class.complete]="point.progress >= 60"></span><strong>{{ point.project }}</strong><small>{{ point.state }} · {{ point.lastUpdate }}</small></div>
+                  <span class="map-project-progress">{{ point.progress | number:'1.0-0' }}%</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="carbon-growth-panel">
+            <div class="map-panel-heading"><span>Crescimento de créditos</span><small>Últimos 6 ciclos</small></div>
+            <div class="carbon-total"><strong>{{ reforestationOverview().carbonCredits | number:'1.1-1' }}</strong><span>tCO2 geradas</span><b>+{{ carbonGrowthRate() | number:'1.1-1' }}%</b></div>
+            <div class="carbon-chart" aria-label="Gráfico de crescimento de créditos de carbono">
+              @for (month of carbonGrowthData(); track month.label) {
+                <div class="carbon-column"><span class="carbon-bar" [style.height.%]="(month.value / reforestationOverview().carbonCredits) * 100"></span><small>{{ month.label }}</small></div>
+              }
+            </div>
+            <div class="carbon-summary"><span><i class="legend-green"></i>Progresso da meta</span><strong>{{ reforestationOverview().progress | number:'1.0-0' }}%</strong></div>
+            <div class="progress-track"><span class="progress-green" [style.width.%]="reforestationOverview().progress"></span></div>
+            <div class="carbon-metrics"><span><b>{{ reforestationOverview().plantedTrees | number }}</b>Árvores no programa</span><span><b>{{ reforestationOverview().activeProjects }}</b>Biomas monitorados</span></div>
+          </div>
+        </div>
+      </section>
+
       <section class="dashboard-split">
-        <article class="stat-card chart-panel"><div class="panel-heading"><div><h2>Evolução da carteira</h2><p>Histórico das movimentações confirmadas</p></div><div class="chart-legend"><span><i class="legend-green"></i>Financeiro</span><span><i class="legend-yellow"></i>Carbono</span></div></div><div class="line-chart">@for (bar of liveChartData(); track $index) {<div class="chart-column"><div class="chart-bar" [ngClass]="{'up': bar.isUp, 'down': !bar.isUp}" [style.height.%]="(bar.value / (balance() + investedTotal() || 1)) * 100 | number:'1.0-0'"></div><small>{{ $index + 1 }}</small></div>}</div></article>
+        <article class="stat-card chart-panel"><div class="panel-heading"><div><h2>Evolução da carteira</h2><p>Capital investido acumulado por aporte</p></div><div class="chart-legend"><span><i class="legend-green"></i>Investido</span></div></div><div class="line-chart">@for (bar of liveChartData(); track $index) {<div class="chart-column"><div class="chart-bar" [ngClass]="{'up': bar.isUp, 'down': !bar.isUp}" [style.height.%]="(bar.value / (balance() + investedTotal() || 1)) * 100 | number:'1.0-0'"></div><small>{{ bar.label }}</small></div>}</div></article>
         <article class="stat-card allocation-panel"><h2>Alocação da carteira</h2><p>{{ balance() > 0 ? 'Saldo disponível' : 'Comece com seu saldo' }}</p><div class="allocation-ring"><span>{{ (balance() + investedTotal()) | currency:'BRL':'symbol':'1.0-0' }}</span><small>Total</small></div><div class="allocation-list"><span><i class="legend-green"></i>Renda disponível <b>{{ balance() | currency:'BRL' }}</b></span><span><i class="legend-yellow"></i>Projetos ambientais <b>{{ investedTotal() | currency:'BRL' }}</b></span></div></article>
       </section>
 
@@ -190,9 +232,21 @@
     }
 
     @if (activeTab() === 'creditos') {
-      <header class="page-heading"><div><p class="eyebrow">ATIVOS AMBIENTAIS</p><h1>Mercado de Carbono</h1><p>Encontre demanda corporativa e negocie créditos com rastreabilidade.</p></div><button class="btn-primary" (click)="openSellCarbonModal()">Registrar venda</button></header>
-      <section class="stats-grid credit-stats"><article class="stat-card highlight metric-card"><span class="stat-title">Créditos disponíveis</span><strong class="stat-value">{{ carbonCredits() | number:'1.2-2' }} tCO2</strong><small>Venda reduz seus créditos; o valor é combinado com o comprador.</small></article><article class="stat-card metric-card"><span class="stat-title">Empresas mapeadas</span><strong class="stat-value">{{ carbonBuyers.length }}</strong><small>Organizações com compromissos públicos de descarbonização.</small></article></section>
-      <section class="stat-card demand-panel"><div class="panel-heading"><div><p class="eyebrow">DEMANDA CORPORATIVA</p><h2>Quem procura soluções de carbono</h2><p>Os programas abaixo são públicos. Disponibilidade, elegibilidade e preço devem ser confirmados diretamente com cada empresa.</p></div></div><div class="buyer-grid">@for (buyer of carbonBuyers; track buyer.name) {<article class="buyer-card"><div class="buyer-heading"><strong>{{ buyer.name }}</strong><span>{{ buyer.commitment }}</span></div><p>{{ buyer.demand }}</p><div class="buyer-meta"><b>{{ buyer.price }}</b><a [href]="'https://' + buyer.source" target="_blank" rel="noopener">Ver programa</a></div></article>}</div></section>
+      <header class="page-heading credit-heading"><div><p class="eyebrow">ATIVOS AMBIENTAIS</p><h1>Créditos de carbono</h1><p>Gerencie seu saldo, encontre uma demanda e conclua sua próxima movimentação.</p></div><button class="btn-primary" (click)="openSellCarbonModal()">Vender créditos</button></header>
+
+      <section class="credit-command-grid" aria-label="Resumo e ações de créditos">
+        <article class="stat-card credit-balance-card">
+          <div class="credit-card-top"><div><span class="stat-title">Saldo disponível</span><strong class="credit-balance-value">{{ carbonCredits() | number:'1.2-2' }} <small>tCO2</small></strong></div><div class="metric-icon green"><lucide-icon [img]="ZapIcon" size="22"></lucide-icon></div></div>
+          <p>Créditos gerados pelos seus projetos e prontos para negociação.</p>
+          <div class="credit-balance-actions"><button class="btn-primary" (click)="openSellCarbonModal()">Registrar venda</button><button class="btn-secondary" (click)="switchTab('certificados')">Ver certificados</button></div>
+        </article>
+        <article class="stat-card credit-action-card">
+          <div class="panel-heading"><div><p class="eyebrow">PRÓXIMO PASSO</p><h2>Transforme impacto em valor</h2><p>Escolha a quantidade, selecione uma empresa e registre a negociação.</p></div><span class="credit-action-number">01</span></div>
+          <div class="credit-action-flow"><span><b>1</b>Defina a quantidade</span><span><b>2</b>Escolha o comprador</span><span><b>3</b>Confirme a venda</span></div>
+        </article>
+      </section>
+
+      <section class="stat-card demand-panel credit-demand-panel"><div class="panel-heading"><div><p class="eyebrow">DEMANDA ATIVA</p><h2>Onde seus créditos podem ser usados</h2><p>Consulte os programas e abra uma venda quando encontrar uma demanda compatível.</p></div><span class="credit-demand-count">{{ carbonBuyers.length }} empresas</span></div><div class="buyer-grid">@for (buyer of carbonBuyers.slice(0, 3); track buyer.name) {<article class="buyer-card"><div class="buyer-heading"><strong>{{ buyer.name }}</strong><span>{{ buyer.commitment }}</span></div><p>{{ buyer.demand }}</p><div class="buyer-meta"><b>{{ buyer.price }}</b><a [href]="'https://' + buyer.source" target="_blank" rel="noopener">Consultar demanda</a></div></article>}</div></section>
     }
 
     @if (activeTab() === 'certificados') {
@@ -309,10 +363,8 @@
   </main>
 
   <footer class="app-footer">
-        <div class="footer-brand"><img class="brand-logo footer-logo" src="/logo.png" alt="BioCapital"><span>Capital que regenera.</span></div>
+      <div class="footer-brand"><span>Capital que regenera.</span></div>
         <div class="footer-links">
-          <button (click)="switchTab('marketplace')">Projetos ambientais</button>
-          <button (click)="switchTab('empresas')">Parcerias</button>
           @if (!isLoggedIn()) {
             <button (click)="openLoginModal()">Acessar conta</button>
           }
